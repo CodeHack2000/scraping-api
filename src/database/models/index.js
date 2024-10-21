@@ -4,7 +4,6 @@ const Fs = require('fs');
 const Path = require('path');
 const Sequelize = require('sequelize');
 
-
 const ServerConfig = require('@config/serverConfig');
 const DbConfig = require('@config/dbConfig');
 
