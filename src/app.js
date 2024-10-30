@@ -5,6 +5,7 @@ const UtilsComponent = require('@utils');
 const FarmaciaSantaMartaComponent = require('@farmaciasantamarta');
 const WorkerPoolComponent = require('@workerPool');
 const TaskQueueComponent = require('@taskQueue');
+const TestWebsiteComponent = require('@testwebsite');
 
 // Load aliases
 require('module-alias/register');
@@ -15,9 +16,10 @@ const app = Express();
 
 const utils = new UtilsComponent();
 const torInstances = new TorInstancesComponent(utils.logger);
-const workerPool = new WorkerPoolComponent(utils.logger);
+const workerPool = new WorkerPoolComponent(utils.logger, torInstances);
 const taskQueue = new TaskQueueComponent(utils.logger, workerPool);
 const farmaciaSantaMarta = new FarmaciaSantaMartaComponent(utils.logger, torInstances, taskQueue);
+const testWebsite = new TestWebsiteComponent(utils.logger, torInstances, taskQueue);
 
 // Config
 app.disable('x-powered-by');
@@ -38,5 +40,6 @@ app.get('/', (req, res) => {
 });
 
 app.use('/farmaciasantamarta', farmaciaSantaMarta.router);
+app.use('/testwebsite', testWebsite.router);
 
 module.exports = app;

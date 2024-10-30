@@ -10,13 +10,13 @@ class TaskQueue {
         this.queue = [];
     }
 
-    async addTask(priority, data, workerFilePath) {
+    async addTask(priority, data) {
 
         this.logger.info('<TaskQueue> Adding task...');
 
         return new Promise((resolve, reject) => {
 
-            this.queue.push({ priority, data, workerFilePath, resolve, reject });
+            this.queue.push({ priority, data, resolve, reject });
             this.queue = this.queue.sort((a, b) => a.priority - b.priority);    // Sort the queue by priority
             this.processQueue();
         });
@@ -38,7 +38,7 @@ class TaskQueue {
             return;
         }
 
-        const { data, workerFilePath, resolve, reject } = this.queue.shift();
+        const { data, resolve, reject } = this.queue.shift();
 
         try {
 
@@ -49,9 +49,11 @@ class TaskQueue {
                 id: Crypto.randomBytes(16).toString('hex')
             };
 
-            const result = await this.workerPool.runTask(_data, workerFilePath);
+            const result = await this.workerPool.assignTask(_data);
 
-            resolve(result);
+            const aggregatedProducts = result?.flatMap((workerResult) => workerResult?.products);
+
+            resolve(aggregatedProducts);
         }
         catch (error) {
 

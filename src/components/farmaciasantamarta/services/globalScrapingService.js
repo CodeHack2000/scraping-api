@@ -1,5 +1,7 @@
 const cheerio = require('cheerio');
 
+const config = require('../config/config');
+
 class GlobalScrapingService {
 
     constructor(Logger, TorInstances) {
@@ -26,6 +28,8 @@ class GlobalScrapingService {
             });
     
             const category = $('div.hero-section h1.page-title').text().trim();
+
+            const lastPage = $('nav.ct-pagination div.ct-hidden-sm a.page-numbers').last().text().trim();
     
             $('ul.products li.product').each((_, element) => {
             
@@ -33,7 +37,8 @@ class GlobalScrapingService {
                     url: $(element).find('a').attr('href'),
                     name: $(element).find('a h2').text().trim(),
                     price: $(element).find('a bdi').text().replace(/[^0-9,]/g, '').trim(),
-                    category: category
+                    category: category,
+                    lastPage: lastPage
                 };
 
                 // Avoid duplicates
@@ -51,41 +56,22 @@ class GlobalScrapingService {
         return products;
     }
 
-    async scrapeAllPages(torIntanceId) {
+    generateCategoryUrls(categoryUrl, lastPage) {
 
-        // Check ip
-        const publicIP = await this.torIntances.getPublicIP(torIntanceId);
+        const urls = [];
 
-        for (let page = 1; page <= maxPages; page++) {
+        this.logger.info('<FarmaciaSantaMarta> Generating category URLs...');
 
-            console.log(`Product: ${product}, Website: ${website}, Page: ${page}, IP: ${publicIP}`);
+        for (let i = 2; i <= lastPage; i++) {
 
-            const timeStart = performance.now();
+            const url = `${config.urlBase}${categoryUrl}/page/${i}/`;
 
-            const response = await requestWebsite(website, queryObj, product, page, agent, userAgent.toString(), jar);
-
-            const timeEnd = performance.now();
-
-            console.log(response.success ? 'Success' : 'Error');
-
-            if (!results[website]) {
-                results[website] = {};
-            }
-
-            if (!results[website][product]) {
-                results[website][product] = [];
-            }
-
-            const result = {
-                time: timeEnd - timeStart,
-                error: response.error,
-                ip: publicIP
-            }
-
-            results[website][product].push(result);
-
-            await new Promise(resolve => setTimeout(resolve, 1000));
+            urls.push(url);
         }
+
+        this.logger.info(`<FarmaciaSantaMarta> Generated ${urls.length} category URLs`);
+
+        return urls;
     }
 }
 

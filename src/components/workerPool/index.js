@@ -1,13 +1,13 @@
 const { Worker } = require('worker_threads');
-const Os = require('os');
 
 class WorkerPool {
 
-    constructor(Logger) {
+    constructor(Logger, TorInstances) {
 
         this.logger = Logger;
+        this.torInstances = TorInstances;
 
-        this.maxWorkers = Os.cpus().length; // Number of logical CPUs on the machine
+        this.maxWorkers = this.torInstances.torTotalInstances;
         this.workersPool = Array.from({ length: this.maxWorkers }, (_, i) => {
 
             return {
@@ -16,7 +16,8 @@ class WorkerPool {
                 currentBatchId: null,
                 classificationSpeed: null,
                 worker: null,
-                workerFilePath: null
+                workerFilePath: null,
+                torInstanceId: null
             };
         });
     }
@@ -27,21 +28,24 @@ class WorkerPool {
         const tasksPerWorker = Math.ceil(taskData?.urls?.length / availableWorkers.length);
 
         let assignedTasks = 0;
-        for (const worker of availableWorkers) {
+        const workerPromises = availableWorkers.map((worker) => {
 
             if (assignedTasks >= taskData?.urls?.length) {
 
-                break;
+                return;
             }
 
             worker.tasks = taskData?.urls?.slice(assignedTasks, assignedTasks + tasksPerWorker);
             worker.currentBatchId = taskData?.id;
             worker.classificationSpeed = taskData?.classificationSpeed;
+            worker.workerFilePath = taskData?.workerFilePath;
 
             assignedTasks += tasksPerWorker;
 
-            this._runWorker(worker.id);
-        }
+            return this._runWorker(worker.id);
+        });
+
+        return Promise.all(workerPromises);
     }
 
     onWorkerComplete(workerId) {
@@ -51,6 +55,7 @@ class WorkerPool {
         this.workersPool[workerId].classificationSpeed = null;
         this.workersPool[workerId].worker = null;
         this.workersPool[workerId].workerFilePath = null;
+        this.workersPool[workerId].torInstanceId = null;
 
         const nextBatchInfo = this._getBatchNeedsMoreWorkers();
         
@@ -68,15 +73,29 @@ class WorkerPool {
 
                     this.workersPool[workerId].tasks = [...this.workersPool[workerId].tasks, ...tasks];
 
-                    workerPool.worker.postMessage({ tasks: workerPool.tasks });
+                    this._sendMessageToWorker(workerPool.id, { tasks: workerPool.tasks });
                 }
             });
 
             this.workersPool[workerId].currentBatchId = batchId;
             this.workersPool[workerId].classificationSpeed = nextBatchInfo[batchId].classificationSpeed;
-            this.workersPool[workerId].workerFilePath = nextBatchInfo[batchId].workerFilePath;;
+            this.workersPool[workerId].workerFilePath = nextBatchInfo[batchId].workerFilePath;
 
             this._runWorker(workerId);
+        }
+    }
+
+    _sendMessageToWorker(workerId, message) {
+
+        const worker = this.workersPool[workerId].worker;
+
+        if (worker) {
+
+            worker.postMessage(message);
+        }
+        else {
+
+            this.logger.warn(`<WorkerPool> Worker ${workerId} not found.`);
         }
     }
 
@@ -86,9 +105,15 @@ class WorkerPool {
 
         return new Promise((resolve, reject) => {
 
-            this.workersPool[workerId].worker = new Worker(this.workersPool[workerId].workerFilePath, { tasks: this.workersPool[workerId].tasks });
+            const data = {
+                urls: this.workersPool[workerId].tasks
+            };
 
-            this.workersPool[workerId].worker.on('message', (result) => {
+            this.workersPool[workerId].worker = new Worker(this.workersPool[workerId].workerFilePath, { workerData: data });
+
+            //const requests = new Map();
+
+            this.workersPool[workerId].worker.on('message', async (result) => {
  
                 if (result.type === 'taskCompleted') {
 
@@ -97,6 +122,39 @@ class WorkerPool {
                     this.logger.info(`<WorkerPool> Worker ${workerId} completed task ${url}`);
 
                     this.workersPool[workerId].tasks = this.workersPool[workerId].tasks.filter((task) => task !== url);
+                }
+                else if (result.type === 'log') {
+
+                    this.logger[result.level || 'info'](result.log);
+                }
+                else if (result.type === 'tor') {
+
+                    if (result.action === 'getNewTorInstance') {
+
+                        this.workersPool[workerId].torInstanceId = this.torInstances.getNewTorInstance();
+
+                        this._sendMessageToWorker(workerId, { requestId: result.requestId, torInstanceId: this.workersPool[workerId].torInstanceId });
+                    }
+                    else if (result.action === 'doGetRequest') {
+
+                        try {
+
+                            console.log('URL = ' + result.url);
+
+                            const response = await this.torInstances.doGetRequest(this.workersPool[workerId].torInstanceId, result.url);
+
+                            this._sendMessageToWorker(workerId, { requestId: result.requestId, response });
+                        }
+                        catch (error) {
+
+                            this._sendMessageToWorker(workerId, { requestId: result.requestId, error: error.message });
+                        }
+                    }
+                    else if (result.action === 'delTorInstance') {
+
+                        this.torInstances.delTorInstance(this.workersPool[workerId].torInstanceId);
+                        this.workersPool[workerId].torInstanceId = null;
+                    }
                 }
                 else {
 

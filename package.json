@@ -16,7 +16,8 @@
     "@env": ".env",
     "@farmaciasantamarta": "src/components/farmaciasantamarta",
     "@workerPool": "src/components/workerPool",
-    "@taskQueue": "src/components/taskQueue"
+    "@taskQueue": "src/components/taskQueue",
+    "@testwebsite": "src/components/testWebsite"
   },
   "author": "",
   "license": "ISC",

@@ -1,3 +1,5 @@
+const Path = require('path');
+
 const config = require('../config/config');
 const GlobalScrapingService = require('../services/globalScrapingService');
 
@@ -22,13 +24,18 @@ class GlobalScrapingController {
 
         try {
 
-            this.logger.info('<FarmaciaSantaMarta> Scraping all categories...');
+            this.logger.info('<TESTWEBSITE> Scraping all categories...');
 
             const categories = config.categories;
 
             torInstanceId = this.torInstances.getNewTorInstance();
 
             for (const categoryId in categories) {
+
+                if (!torInstanceId) {
+
+                    torInstanceId = this.torInstances.getNewTorInstance();;
+                }
 
                 const category = categories[categoryId];
                 const categoryUrl = category.url;
@@ -45,11 +52,14 @@ class GlobalScrapingController {
 
                 if (result?.products?.[0]?.lastPage > 1) {
 
+                    // Delete tor instance, because each worker has its own tor instance
+                    this.torInstances.delTorInstance(torInstanceId);
+                    torInstanceId = null;
+
                     const workerData = {
                         urls: this.service.generateCategoryUrls(categoryUrl, result.products[0].lastPage),
                         classificationSpeed: config.responseTimeClassification,
-                        workerFilePath: '@farmaciasantamarta/workers/globalScrapingWorker.js',
-                        torInstanceId
+                        workerFilePath: Path.resolve(__dirname, '../workers/globalScrapingWorker.js')
                     };
 
                     const workersProducts = await this.taskQueue.addTask(1, workerData);
@@ -66,7 +76,7 @@ class GlobalScrapingController {
         }
         catch (error) {
 
-            this.logger.error('<FarmaciaSantaMarta> Error scraping all categories: ' + error.message);
+            this.logger.error('<TESTWEBSITE> Error scraping all categories: ' + error.message);
         }
         finally {
 
