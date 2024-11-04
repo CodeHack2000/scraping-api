@@ -7,7 +7,7 @@ class WorkerPool {
         this.logger = Logger;
         this.torInstances = TorInstances;
 
-        this.maxWorkers = this.torInstances.torTotalInstances;
+        this.maxWorkers = this.torInstances.torTotalInstances - 1; // 1 tor instance is universal for all controllers
         this.workersPool = Array.from({ length: this.maxWorkers }, (_, i) => {
 
             return {
@@ -73,7 +73,7 @@ class WorkerPool {
 
                     this.workersPool[workerId].tasks = [...this.workersPool[workerId].tasks, ...tasks];
 
-                    this._sendMessageToWorker(workerPool.id, { tasks: workerPool.tasks });
+                    this._sendMessageToWorker(workerPool.id, { tasks: workerPool.tasks, type: 'updateTasks' });
                 }
             });
 
@@ -111,15 +111,13 @@ class WorkerPool {
 
             this.workersPool[workerId].worker = new Worker(this.workersPool[workerId].workerFilePath, { workerData: data });
 
-            //const requests = new Map();
-
             this.workersPool[workerId].worker.on('message', async (result) => {
  
                 if (result.type === 'taskCompleted') {
 
                     const { url } = result;
 
-                    this.logger.info(`<WorkerPool> Worker ${workerId} completed task ${url}`);
+                    this.logger.info(`<WorkerPool> Worker ${workerId} completed succesfully the tasks.`);
 
                     this.workersPool[workerId].tasks = this.workersPool[workerId].tasks.filter((task) => task !== url);
                 }
@@ -139,10 +137,10 @@ class WorkerPool {
 
                         try {
 
-                            console.log('URL = ' + result.url);
-
                             const response = await this.torInstances.doGetRequest(this.workersPool[workerId].torInstanceId, result.url);
 
+                            this.workersPool[workerId].tasks = this.workersPool[workerId].tasks.filter((task) => task !== result.url);
+                            
                             this._sendMessageToWorker(workerId, { requestId: result.requestId, response });
                         }
                         catch (error) {
@@ -158,7 +156,12 @@ class WorkerPool {
                 }
                 else {
 
-                    this.logger.info(`<WorkerPool> Worker ${workerId} finished batch ${this.workersPool[workerId].currentBatchId}.`);
+                    this.logger.info(`<WorkerPool> Worker ${workerId} finished tasks on batch ${this.workersPool[workerId].currentBatchId}.`);
+                    
+                    if (this.workersPool[workerId].torInstanceId) {
+        
+                        this.torInstances.delTorInstance(this.workersPool[workerId].torInstanceId);
+                    }
 
                     resolve(result);
                     this.onWorkerComplete(workerId);

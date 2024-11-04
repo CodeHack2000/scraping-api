@@ -25,11 +25,11 @@ class TorControlService {
 
         try {
 
-            this.logger.info('Getting new circuit...');
+            this.logger.info('<TorControl> Getting new circuit...');
 
             await this.control.signalNewnym();
 
-            this.logger.info('New circuit obtained successfully!');
+            this.logger.info('<TorControl> New circuit obtained successfully!');
         }
         catch (error) {
 

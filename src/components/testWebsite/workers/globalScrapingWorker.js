@@ -19,6 +19,11 @@ class GlobalScrapingWorker {
 
         parentPort.on('message', (message) => {
 
+            if (message.type === 'updateTasks') {
+
+                this.urls = message.tasks;
+            }
+
             if (message.requestId && this.pendindRequests.has(message.requestId)) {
                 
                 const { resolve, reject } = this.pendindRequests.get(message.requestId);
@@ -49,36 +54,47 @@ class GlobalScrapingWorker {
 
     async scrapeUrls() {
 
-        let torInstanceId;
+        let torInstanceId = this._sendRequest('getNewTorInstance');
+        let isActive = true;
 
-        for (const url of this.urls) {
+        while (isActive) {
 
-            torInstanceId = this._sendRequest('getNewTorInstance');
+            if (!this.urls.length) {
+
+                await new Promise(resolve => setTimeout(resolve, 1000));
+
+                if (!this.urls.length) {
+
+                    isActive = false;
+                }
+
+                continue;
+            }
+
+            const url = this.urls.shift();
 
             try {
+
+                if (!torInstanceId) {
+
+                    torInstanceId = this._sendRequest('getNewTorInstance');
+                }
 
                 const response = await this._sendRequest('doGetRequest', { url });
 
                 if (response?.success) {
 
-                    const jsonData = this.service.extractHtmlToJson(response.data, );
+                    const jsonData = this.service.extractHtmlToJson(response.data);
 
                     this.products = this.products.concat(jsonData);
                 }
 
-                // Wait 1s
+                // Wait 1s after each request
                 await new Promise(resolve => setTimeout(resolve, 1000));
             }
             catch (error) {
 
                 parentPort.postMessage({ error: `Error while scraping ${url}: ${error.message}` });
-            }
-            finally {
-
-                if (torInstanceId) {
-
-                    this._sendRequest('delTorInstance');
-                }
             }
         }
     }

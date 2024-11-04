@@ -65,6 +65,8 @@ class TaskQueue {
 
             this.logger.info('<TaskQueue> Task completed.');
 
+            // Give time for workers reorder the tasks if is possible
+            await new Promise(resolve => setTimeout(resolve, 5000));
             if (this.queue.length > 0) {
 
                 this.logger.info('<TaskQueue> Processing next task...');

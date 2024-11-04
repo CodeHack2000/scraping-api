@@ -10,6 +10,7 @@ class Tor {
 
         this.torTotalInstances = torConfig.torInstances.length;
         this.torActiveInstances = Array.from({ length: this.torTotalInstances }, () => null);
+        this.universalTorInstanceId = this.getNewTorInstance();
     }
 
     _getTorNumActiveInstances() {
@@ -26,7 +27,7 @@ class Tor {
 
         let torIntance = null;
 
-        this.logger.info('Getting tor instance with ID: ' + torIntanceId);
+        this.logger.info('<Tor> Getting tor instance with ID: ' + torIntanceId);
 
         try {
 
@@ -39,13 +40,13 @@ class Tor {
             }
             else {
 
-                this.logger.warn('Invalid tor instance ID');
+                this.logger.warn('<Tor> Invalid tor instance ID');
                 throw new Error('Invalid tor instance ID');
             }
         }
         catch (error) {
 
-            this.logger.error('Error getting tor instance: ' + error.message);
+            this.logger.error('<Tor> Error getting tor instance: ' + error.message);
             throw error;
         }
 
@@ -58,7 +59,7 @@ class Tor {
 
         try {
 
-            this.logger.info('Refreshing tor instance with ID: ' + torIntanceId);
+            this.logger.info('<Tor> Refreshing tor instance with ID: ' + torIntanceId);
 
             const torInstance = this._getTorInstance(torIntanceId);
 
@@ -72,7 +73,7 @@ class Tor {
         }
         catch (error) {
 
-            this.logger.error('Error refreshing tor instance: ' + error.message);
+            this.logger.error('<Tor> Error refreshing tor instance: ' + error.message);
         }
 
         return success;
@@ -113,7 +114,7 @@ class Tor {
 
         try {
 
-            this.logger.info('Deleting tor instance with ID: ' + torIntanceId);
+            this.logger.info('<Tor> Deleting tor instance with ID: ' + torIntanceId);
 
             this.torActiveInstances[torIntanceId - 1] = null;
 
@@ -121,7 +122,7 @@ class Tor {
         }
         catch (error) {
 
-            this.logger.error('Error deleting tor instance: ' + error.message);
+            this.logger.error('<Tor> Error deleting tor instance: ' + error.message);
         }
 
         return success;
@@ -133,21 +134,19 @@ class Tor {
 
         try {
 
-            this.logger.info('Getting public IP...');
+            this.logger.info('<Tor> Getting public IP...');
 
             const torInstance = this._getTorInstance(torIntanceId);
-
-            console.log(torInstance);
 
             const { data } = await torInstance.axiosAgent.get('https://api.ipify.org?format=json');
 
             ip = data?.ip;
 
-            this.logger.debug('Public IP: ' + ip);
+            this.logger.debug('<Tor> Public IP: ' + ip);
         }
         catch (error) {
 
-            this.logger.error('Error getting public IP: ' + error.message);
+            this.logger.error('<Tor> Error getting public IP: ' + error.message);
         }
 
         return ip || '';
@@ -163,7 +162,7 @@ class Tor {
 
             try {
 
-                this.logger.debug(`Attempt #${attempt + 1} to fetch URL with tor instance ID ${torIntanceId}: ${url}`);
+                this.logger.debug(`<Tor> Attempt #${attempt + 1} to fetch URL with tor instance ID ${torIntanceId}: ${url}`);
 
                 const torInstance = this._getTorInstance(torIntanceId);
 
@@ -174,22 +173,22 @@ class Tor {
                     response.success = true;
                     response.data = data;
 
-                    this.logger.info(`Successfully fetched URL with tor instance ID ${torIntanceId} on attempt #${attempt + 1}`);
+                    this.logger.info(`<Tor> Successfully fetched URL with tor instance ID ${torIntanceId} on attempt #${attempt + 1}`);
                     break; // Exit loop if the response is valid
                 }
                 else if (typeof data === 'object') {
 
-                    this.logger.warn(`Response does not contain valid HTML on attempt #${attempt + 1}: ` + JSON.stringify(data));
+                    this.logger.warn(`<Tor> Response does not contain valid HTML on attempt #${attempt + 1}: ` + JSON.stringify(data));
                 }
                 else {
                     
-                    this.logger.warn(`Response does not contain valid HTML on attempt #${attempt + 1}`);
+                    this.logger.warn(`<Tor> Response does not contain valid HTML on attempt #${attempt + 1}`);
                 }
 
             }
             catch (error) {
 
-                this.logger.error(`Error fetching URL with tor instance ID ${torIntanceId} on attempt #${attempt + 1}. ${error.message}`);
+                this.logger.error(`<Tor> Error fetching URL with tor instance ID ${torIntanceId} on attempt #${attempt + 1}. ${error.message}`);
                 response.error = error.message;
             }
 
@@ -205,7 +204,7 @@ class Tor {
         }
 
         if (!response.success) {
-            this.logger.error(`Failed to fetch URL with tor instance ID ${torIntanceId} after ${maxRetries} attempts.`);
+            this.logger.error(`<Tor> Failed to fetch URL with tor instance ID ${torIntanceId} after ${maxRetries} attempts.`);
         }
 
         return response;
