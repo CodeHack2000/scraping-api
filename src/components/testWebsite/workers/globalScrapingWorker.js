@@ -1,4 +1,5 @@
 const { parentPort, workerData } = require('worker_threads');
+
 const GlobalScrapingService = require('../services/globalScrapingService');
 
 class GlobalScrapingWorker {
@@ -9,6 +10,7 @@ class GlobalScrapingWorker {
 
         this.urls = urls || [];
         this.products = [];
+        this.notScrapedUrls = [];
 
         this.logger = {
             log: (message, level = 'info') => parentPort.postMessage({ type: 'log', level, log: message }),
@@ -88,6 +90,10 @@ class GlobalScrapingWorker {
 
                     this.products = this.products.concat(jsonData);
                 }
+                else {
+
+                    this.notScrapedUrls.push(url);
+                }
 
                 // Wait 1s after each request
                 await new Promise(resolve => setTimeout(resolve, 1000));
@@ -104,7 +110,7 @@ class GlobalScrapingWorker {
         try {
 
             await this.scrapeUrls();
-            parentPort.postMessage({ products: this.products });
+            parentPort.postMessage({ products: this.products, notScrapedUrls: this.notScrapedUrls });
         }
         catch (error) {
 

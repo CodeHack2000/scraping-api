@@ -25,6 +25,10 @@ module.exports = (sequelize, DataTypes, schema) => {
             type: DataTypes.DOUBLE,
             allowNull: false
         },
+        url: {
+            type: DataTypes.TEXT,
+            allowNull: false
+        },
         createdAt: {
             type: DataTypes.DATE,
             allowNull: false,
@@ -36,7 +40,13 @@ module.exports = (sequelize, DataTypes, schema) => {
     }, { 
         schema,
         tableName: 'prices',
-        timestamps: false
+        timestamps: false,
+        indexes: [
+            {
+                unique: true,
+                fields: ['productId', 'websiteId']
+            }
+        ]
     });
 
     table.associate = (models) => {

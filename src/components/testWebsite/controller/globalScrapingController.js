@@ -1,15 +1,22 @@
 const Path = require('path');
+const Fs = require('fs');
+const Moment = require('moment');
 
 const config = require('../config/config');
 const GlobalScrapingService = require('../services/globalScrapingService');
 
 class GlobalScrapingController {
 
-    constructor(Logger, TorInstances, TaskQueue) {
+    constructor(Utils, Tools, DB) {
+
+        const { Logger } = Utils;
+        const { TorInstances, TaskQueue } = Tools;
+        const { InventoryDB } = DB;
 
         this.logger = Logger;
         this.torInstances = TorInstances;
         this.taskQueue = TaskQueue;
+        this.inventoryDB = InventoryDB;
 
         this.service = new GlobalScrapingService(Logger);
     }
@@ -29,11 +36,14 @@ class GlobalScrapingController {
 
             const categories = config.categories;
 
+            const notScrapedUrls = [];
+
             for (const categoryId in categories) {
 
                 const category = categories[categoryId];
                 const categoryUrl = category.url;
                 const url = config.urlBase + categoryUrl;
+                const categoryProducts = [];
 
                 const response = await this.torInstances.doGetRequest(universalTorInstanceId, url);
 
@@ -41,20 +51,55 @@ class GlobalScrapingController {
 
                     const jsonData = this.service.extractHtmlToJson(response.data);
 
-                    result.products = result.products.concat(jsonData);
+                    categoryProducts.push(...jsonData);
+                }
+                else {
+
+                    notScrapedUrls.push(url);
                 }
 
-                if (result?.products?.[0]?.lastPage > 1) {
+                if (categoryProducts[0]?.lastPage > 1) {
 
                     const workerData = {
-                        urls: this.service.generateCategoryUrls(categoryUrl, result.products[0].lastPage),
+                        urls: this.service.generateCategoryUrls(categoryUrl, categoryProducts[0]?.lastPage),
                         classificationSpeed: config.responseTimeClassification,
                         workerFilePath: Path.resolve(__dirname, '../workers/globalScrapingWorker.js')
                     };
 
                     const workersProducts = await this.taskQueue.addTask(1, workerData);
-                    result.products = result.products.concat(workersProducts);
+                    categoryProducts.push(...workersProducts.aggregatedProducts);
+
+                    if (workersProducts?.aggregatedNotScrapedUrls?.length > 0) {
+
+                        notScrapedUrls.push(...workersProducts.aggregatedNotScrapedUrls);
+                    }
                 }
+
+                const insertedData = await this.inventoryDB.testTableService.insTestTableBatch(categoryProducts);
+
+                if (insertedData?.length === 0) {
+
+                    const filename = `not-inserted-data-${Moment().toDate().toISOString()}.json`;
+
+                    const filePath = Path.join(__dirname, '../../../data', filename);
+
+                    Fs.writeFileSync(filePath, JSON.stringify(categoryProducts, null, 2));
+
+                    this.logger.warn(`<TESTWEBSITE> The following batch may have data that could not been inserted: ${filePath}`);
+                }
+
+                result.products.push(...categoryProducts);
+            }
+
+            if (notScrapedUrls.length > 0) {
+
+                const filename = `not-scraped-urls-${Moment().toDate().toISOString()}.json`;
+
+                const filePath = Path.join(__dirname, '../../../data', filename);
+
+                Fs.writeFileSync(filePath, JSON.stringify(notScrapedUrls, null, 2));
+
+                this.logger.warn(`<TESTWEBSITE> The following urls were not scraped: ${filePath}`);
             }
 
             result.status = 200;

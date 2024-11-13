@@ -8,8 +8,6 @@ class AxiosAgentService {
 
     constructor(host, port) {
 
-        console.log(host, port);
-
         this.agent = new SocksProxyAgent(`socks://${host}:${port}`);
         this.jar = new CookieJar();
         this.userAgent = new UserAgent();

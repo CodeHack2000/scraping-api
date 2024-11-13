@@ -4,19 +4,40 @@ const config = require('../config/config');
 
 class GlobalScrapingService {
 
-    constructor(Logger, TorInstances) {
+    constructor(Logger, isWorker = false) {
 
         this.logger = Logger;
-        this.torIntances = TorInstances;
+        this.isWorker = isWorker;
     }
 
+    /**
+     * Extracts product data from HTML content and converts it to a JSON format.
+     * 
+     * This function uses Cheerio to parse the provided HTML and extracts information
+     * about products such as their URL, name, and price. It also determines the last
+     * pagination page available. The extracted data is returned as an array of product
+     * objects.
+     * 
+     * Logs information or errors during the extraction process, depending on whether
+     * the service is running as a worker or not.
+     * 
+     * @param {string} html - The HTML content to be parsed and extracted.
+     * @returns {Array<Object>} An array of product objects containing the URL, name, price, and last page.
+     */
     extractHtmlToJson(html) {
 
         const products = [];
 
         try {
 
-            this.logger.info('<FarmaciaSantaMarta> Extracting HTML to JSON...');
+            if (this.isWorker) {
+
+                this.logger.log('<FarmaciaSantaMarta> Extracting HTML to JSON...');
+            }
+            else {
+                
+                this.logger.info('<FarmaciaSantaMarta> Extracting HTML to JSON...');
+            };
 
             const $ = cheerio.load(html, {
                 decodeEntities: false,
@@ -26,8 +47,6 @@ class GlobalScrapingService {
                 recognizeSelfClosing: true,
                 charset: 'UTF-8'
             });
-    
-            const category = $('div.hero-section h1.page-title').text().trim();
 
             const lastPage = $('nav.ct-pagination div.ct-hidden-sm a.page-numbers').last().text().trim();
     
@@ -37,30 +56,45 @@ class GlobalScrapingService {
                     url: $(element).find('a').attr('href'),
                     name: $(element).find('a h2').text().trim(),
                     price: $(element).find('a bdi').text().replace(/[^0-9,]/g, '').trim(),
-                    category: category,
                     lastPage: lastPage
                 };
-
-                // Avoid duplicates
-                if (products.findIndex((pro) => pro.url === product.url) === -1) {
-
-                    products.push(product);
-                }
+                
+                products.push(product);
             });
         }
         catch (error) {
 
-            this.logger.error('<FarmaciaSantaMarta> Error extracting HTML to JSON: ' + error.message);
+            if (this.isWorker) {
+
+                this.logger.log('<FarmaciaSantaMarta> Error extracting HTML to JSON: ' + error.message, 'error');
+            }
+            else {
+                
+                this.logger.error('<FarmaciaSantaMarta> Error extracting HTML to JSON: ' + error.message);
+            };
         }
 
         return products;
     }
 
+    /**
+     * Generates a list of category URLs to be scraped. The list of URLs does not include the first page.
+     * @param {string} categoryUrl - URL of the category to be scraped.
+     * @param {number} lastPage - Number of the last page to be scraped.
+     * @returns {Array<string>} A list of category URLs to be scraped.
+     */
     generateCategoryUrls(categoryUrl, lastPage) {
 
         const urls = [];
 
-        this.logger.info('<FarmaciaSantaMarta> Generating category URLs...');
+        if (this.isWorker) {
+
+            this.logger.log('<FarmaciaSantaMarta> Generating category URLs...');
+        }
+        else {
+            
+            this.logger.info('<FarmaciaSantaMarta> Generating category URLs...');
+        }
 
         for (let i = 2; i <= lastPage; i++) {
 
@@ -69,7 +103,14 @@ class GlobalScrapingService {
             urls.push(url);
         }
 
-        this.logger.info(`<FarmaciaSantaMarta> Generated ${urls.length} category URLs`);
+        if (this.isWorker) {
+
+            this.logger.log(`<FarmaciaSantaMarta> Generated ${urls.length} category URLs`);
+        }
+        else {
+            
+            this.logger.info(`<FarmaciaSantaMarta> Generated ${urls.length} category URLs`);
+        }
 
         return urls;
     }

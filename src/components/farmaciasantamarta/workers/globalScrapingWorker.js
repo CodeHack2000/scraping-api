@@ -1,28 +1,88 @@
 const { parentPort, workerData } = require('worker_threads');
+
 const GlobalScrapingService = require('../services/globalScrapingService');
 
 class GlobalScrapingWorker {
 
     constructor(data) {
 
-        const { torInstances, torInstanceId, urls, logger } = data;
+        const { urls } = data;
 
         this.urls = urls || [];
-        this.torInstances = torInstances;
-        this.torInstanceId = torInstanceId;
         this.products = [];
-        this.logger = logger;
+        this.notScrapedUrls = [];
 
-        this.service = new GlobalScrapingService(logger);
+        this.logger = {
+            log: (message, level = 'info') => parentPort.postMessage({ type: 'log', level, log: message }),
+        };
+        this.service = new GlobalScrapingService(this.logger, true);
+        this.requestId = 0;
+        this.pendindRequests = new Map();
+
+        parentPort.on('message', (message) => {
+
+            if (message.type === 'updateTasks') {
+
+                this.urls = message.tasks;
+            }
+
+            if (message.requestId && this.pendindRequests.has(message.requestId)) {
+                
+                const { resolve, reject } = this.pendindRequests.get(message.requestId);
+                
+                this.pendindRequests.delete(message.requestId);
+
+                if (message.error) {
+
+                    reject(new Error(message.error));
+                }
+                else {
+
+                    resolve(message.response);
+                }
+            }
+        });
+    }
+
+    _sendRequest(action, data) {
+
+        return new Promise((resolve, reject) => {
+
+            const requestId = ++this.requestId;
+            this.pendindRequests.set(requestId, { resolve, reject });
+            parentPort.postMessage({ type: 'tor', requestId, action, ...data });
+        });
     }
 
     async scrapeUrls() {
 
-        for (const url of this.urls) {
+        let torInstanceId = this._sendRequest('getNewTorInstance');
+        let isActive = true;
+
+        while (isActive) {
+
+            if (!this.urls.length) {
+
+                await new Promise(resolve => setTimeout(resolve, 1000));
+
+                if (!this.urls.length) {
+
+                    isActive = false;
+                }
+
+                continue;
+            }
+
+            const url = this.urls.shift();
 
             try {
 
-                const response = await this.torInstances.doGetRequest(this.torInstanceId, url);
+                if (!torInstanceId) {
+
+                    torInstanceId = this._sendRequest('getNewTorInstance');
+                }
+
+                const response = await this._sendRequest('doGetRequest', { url });
 
                 if (response?.success) {
 
@@ -30,6 +90,13 @@ class GlobalScrapingWorker {
 
                     this.products = this.products.concat(jsonData);
                 }
+                else {
+
+                    this.notScrapedUrls.push(url);
+                }
+
+                // Wait 1s after each request
+                await new Promise(resolve => setTimeout(resolve, 1000));
             }
             catch (error) {
 
@@ -43,11 +110,11 @@ class GlobalScrapingWorker {
         try {
 
             await this.scrapeUrls();
-            parentPort.postMessage({ products: this.products });
+            parentPort.postMessage({ products: this.products, notScrapedUrls: this.notScrapedUrls });
         }
         catch (error) {
 
-            this.logger.error(`Error while scraping: ${error.message}`);
+            this.logger.log(`Error while scraping: ${error.message}`, error);
         }
     }
 }
@@ -56,7 +123,7 @@ if (parentPort) {
 
     const workerInstance = new GlobalScrapingWorker(workerData);
     
-    workerInstance.runTasks()
+    workerInstance.execute()
         .then((results) => {
 
             parentPort.postMessage({ type: 'taskCompleted', results });

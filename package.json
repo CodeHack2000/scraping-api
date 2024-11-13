@@ -5,7 +5,8 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "nodemon ./src/server.js",
-    "migrate": "npx sequelize-cli db:migrate"
+    "migrate": "npx sequelize-cli db:migrate",
+    "seed": "sequelize db:seed:all"
   },
   "_moduleAliases": {
     "@models": "src/database/models",
@@ -17,7 +18,8 @@
     "@farmaciasantamarta": "src/components/farmaciasantamarta",
     "@workerPool": "src/components/workerPool",
     "@taskQueue": "src/components/taskQueue",
-    "@testwebsite": "src/components/testWebsite"
+    "@testwebsite": "src/components/testWebsite",
+    "@inventoryDB": "src/components/inventoryDB"
   },
   "author": "",
   "license": "ISC",
@@ -30,6 +32,7 @@
     "dotenv": "^16.4.5",
     "express": "^4.21.1",
     "module-alias": "^2.2.3",
+    "moment": "^2.30.1",
     "nodemon": "^3.1.7",
     "pg": "^8.13.0",
     "sequelize": "^6.37.4",

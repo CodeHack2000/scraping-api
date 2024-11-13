@@ -47,11 +47,7 @@ class GlobalScrapingService {
                     lastPage
                 };
 
-                // Avoid duplicates
-                if (products.findIndex((pro) => pro.name === team.name) === -1) {
-
-                    products.push(team);
-                }
+                products.push(team);
             });
         }
         catch (error) {

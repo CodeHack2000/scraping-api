@@ -1,15 +1,27 @@
+const Path = require('path');
+const Fs = require('fs');
+const Moment = require('moment');
+
 const config = require('../config/config');
 const GlobalScrapingService = require('../services/globalScrapingService');
+const DatabaseService = require('../services/databaseService');
+const GlobalMapper = require('../mapper/globalMapper');
 
 class GlobalScrapingController {
 
-    constructor(Logger, TorInstances, TaskQueue) {
+    constructor(Utils, Tools, DB) {
+
+        const { Logger } = Utils;
+        const { TorInstances, TaskQueue } = Tools;
+        const { InventoryDB } = DB;
 
         this.logger = Logger;
         this.torInstances = TorInstances;
         this.taskQueue = TaskQueue;
+        this.inventoryDB = InventoryDB;
 
         this.service = new GlobalScrapingService(Logger);
+        this.databaseService = new DatabaseService(Logger, InventoryDB);
     }
 
     async scrapeAllCategories(req, res) {
@@ -18,48 +30,89 @@ class GlobalScrapingController {
             status: 400,
             products: []
         };
-        let torInstanceId;
 
         try {
 
             this.logger.info('<FarmaciaSantaMarta> Scraping all categories...');
 
+            const universalTorInstanceId = this.torInstances.universalTorInstanceId;
+
             const categories = config.categories;
+            const websiteId = (await this.inventoryDB.websitesDB.getWebsiteByUrl(config.urlBase))?.id;
 
-            torInstanceId = this.torInstances.getNewTorInstance();
+            const notScrapedUrls = [];
 
-            for (const categoryId in categories) {
+            for (const _categoryId in categories) {
 
-                const category = categories[categoryId];
+                const category = categories[_categoryId];
                 const categoryUrl = category.url;
                 const url = config.urlBase + categoryUrl;
+                const categoryProducts = [];
 
-                const response = await this.torInstances.doGetRequest(torInstanceId, url);
+                const mappedCategory = GlobalMapper.mapCategoryToDB(categoryUrl);
+                const categoryId = (await this.inventoryDB.categoriesDB.getCategoryByName(mappedCategory))?.id;
+
+                const response = await this.torInstances.doGetRequest(universalTorInstanceId, url);
 
                 if (response?.success) {
 
                     const jsonData = this.service.extractHtmlToJson(response.data);
 
-                    result.products = result.products.concat(jsonData);
+                    categoryProducts.push(...jsonData);
+                }
+                else {
+
+                    notScrapedUrls.push(url);
                 }
 
-                if (result?.products?.[0]?.lastPage > 1) {
+                if (categoryProducts[0]?.lastPage > 1) {
 
                     const workerData = {
-                        urls: this.service.generateCategoryUrls(categoryUrl, result.products[0].lastPage),
+                        urls: this.service.generateCategoryUrls(categoryUrl, categoryProducts[0]?.lastPage),
                         classificationSpeed: config.responseTimeClassification,
-                        workerFilePath: '@farmaciasantamarta/workers/globalScrapingWorker.js',
-                        torInstanceId
+                        workerFilePath: Path.resolve(__dirname, '../workers/globalScrapingWorker.js')
                     };
 
                     const workersProducts = await this.taskQueue.addTask(1, workerData);
-                    result.products = result.products.concat(workersProducts);
+                    categoryProducts.push(...workersProducts.aggregatedProducts);
+
+                    if (workersProducts?.aggregatedNotScrapedUrls?.length > 0) {
+
+                        notScrapedUrls.push(...workersProducts.aggregatedNotScrapedUrls);
+                    }
                 }
 
-                if (categoryId < categories.length - 1) {
-                    
-                    this.torInstances.refreshTorInstance(torInstanceId);
+                const insertedData = await this.databaseService.insertDataToDB(categoryProducts, categoryId, websiteId);
+
+                if (insertedData?.length === 0) {
+
+                    const filename = `not-inserted-data_farmaciasantamarta_${Moment().toDate().toISOString()}.json`;
+
+                    const filePath = Path.join(__dirname, '../../../data', filename);
+
+                    const notInsertedData = {
+                        websiteId: websiteId || '',
+                        categoryId: categoryId || '',
+                        data: categoryProducts
+                    };
+
+                    Fs.writeFileSync(filePath, JSON.stringify(notInsertedData, null, 2));
+
+                    this.logger.warn(`<FarmaciaSantaMarta> The following batch may have data that could not been inserted: ${filePath}`);
                 }
+
+                result.products.push(...categoryProducts);
+            }
+
+            if (notScrapedUrls.length > 0) {
+
+                const filename = `not-scraped-urls_farmaciasantamarta__${Moment().toDate().toISOString()}.json`;
+
+                const filePath = Path.join(__dirname, '../../../data', filename);
+
+                Fs.writeFileSync(filePath, JSON.stringify(notScrapedUrls, null, 2));
+
+                this.logger.warn(`<FarmaciaSantaMarta> The following urls were not scraped: ${filePath}`);
             }
 
             result.status = 200;
@@ -67,13 +120,6 @@ class GlobalScrapingController {
         catch (error) {
 
             this.logger.error('<FarmaciaSantaMarta> Error scraping all categories: ' + error.message);
-        }
-        finally {
-
-            if (torInstanceId) {
-
-                this.torInstances.delTorInstance(torInstanceId);
-            }
         }
 
         return res

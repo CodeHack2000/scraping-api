@@ -2,9 +2,9 @@ const GlobalScrapingRouter = require('./routes/globalScrapingRouter');
 
 class FarmaciaSantaMarta {
 
-    constructor(Logger, TorInstances, TaskQueue) {
+    constructor(Utils, Tools, DB) {
 
-        this.router = (new GlobalScrapingRouter(Logger, TorInstances, TaskQueue)).router;
+        this.router = (new GlobalScrapingRouter(Utils, Tools, DB)).router;
     }
 }
 

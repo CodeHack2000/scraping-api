@@ -28,6 +28,10 @@ module.exports = {
                 type: Sequelize.DOUBLE,
                 allowNull: false
             },
+            url: {
+                type: Sequelize.TEXT,
+                allowNull: false
+            },
             createdAt: {
                 type: Sequelize.DATE,
                 allowNull: false,

@@ -4,7 +4,7 @@ const DbConfig = require('../../config/dbConfig');
 
 module.exports = {
     up: (queryInterface, Sequelize) => {
-        return queryInterface.createTable('websites', {
+        return queryInterface.createTable('test_table', {
             id: {
                 type: Sequelize.INTEGER,
                 autoIncrement: true,
@@ -12,12 +12,13 @@ module.exports = {
             },
             name: {
                 type: Sequelize.STRING,
-                allowNull: false,
-                unique: true
-            },
-            url: {
-                type: Sequelize.TEXT,
                 allowNull: false
+            },
+            year: {
+                type: Sequelize.STRING
+            },
+            wins: {
+                type: Sequelize.STRING
             },
             createdAt: {
                 type: Sequelize.DATE,
@@ -29,17 +30,17 @@ module.exports = {
             },
         }, {
             schema: DbConfig.schema,
-            tableName: 'websites',
+            tableName: 'test_table',
             timestamps: false,
             indexes: [
                 {
                     unique: true,
-                    fields: ['productId', 'websiteId']
+                    fields: ['name', 'year']
                 }
             ]
         });
     },
     down: (queryInterface) => {
-        return queryInterface.dropTable('websites');
+        return queryInterface.dropTable('test_table');
     }
 };

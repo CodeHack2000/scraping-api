@@ -51,9 +51,10 @@ class TaskQueue {
 
             const result = await this.workerPool.assignTask(_data);
 
-            const aggregatedProducts = result?.flatMap((workerResult) => workerResult?.products);
+            const aggregatedProducts = result?.flatMap((workerResult) => workerResult?.products) || [];
+            const aggregatedNotScrapedUrls = result?.flatMap((workerResult) => workerResult?.notScrapedUrls) || [];
 
-            resolve(aggregatedProducts);
+            resolve({ aggregatedProducts, aggregatedNotScrapedUrls } );
         }
         catch (error) {
 
