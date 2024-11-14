@@ -7,7 +7,7 @@ class WebsitesMapper {
         this.commonMapper = CommonMapper;
     }
 
-    static insWebsite(website) {
+    insWebsite(website) {
 
         return {
             name: this.commonMapper.toString(website?.name),
@@ -16,7 +16,7 @@ class WebsitesMapper {
         };
     }
 
-    static updWebsite(website) {
+    updWebsite(website) {
 
         return {
             id: this.commonMapper.toInt(website?.id),

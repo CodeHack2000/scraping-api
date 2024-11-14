@@ -16,11 +16,11 @@ class ProductsMapper {
      * @param {boolean} product.msrm - Measurement status of the product.
      * @returns {Object} The mapped product object with validated and transformed properties.
      */
-    static insProduct(product) {
+    insProduct(product) {
 
         return {
             name: this.commonMapper.toString(product?.name),
-            categoryId: this.commonMapper.toInt(product?.categoryId),
+            categoryId: this.commonMapper.toString(product?.categoryId, null),
             description: this.commonMapper.toString(product?.description),
             msrm: this.commonMapper.toBoolean(product?.msrm),
             updatedAt: Moment().toDate()
@@ -37,7 +37,7 @@ class ProductsMapper {
      * @param {boolean} product.msrm - Measurement status of the product.
      * @returns {Object} The mapped product object with validated and transformed properties.
      */
-    static updProduct(product) {
+    updProduct(product) {
 
         return {
             id: this.commonMapper.toInt(product?.id),

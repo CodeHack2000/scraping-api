@@ -22,8 +22,7 @@ module.exports = (sequelize, DataTypes, schema) => {
             }
         },
         price: {
-            type: DataTypes.DOUBLE,
-            allowNull: false
+            type: DataTypes.STRING,
         },
         url: {
             type: DataTypes.TEXT,

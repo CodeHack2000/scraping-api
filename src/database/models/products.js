@@ -9,8 +9,7 @@ module.exports = (sequelize, DataTypes, schema) => {
         },
         name: {
             type: DataTypes.STRING,
-            allowNull: false,
-            unique: true
+            allowNull: false
         },
         categoryId: {
             type: DataTypes.INTEGER,
@@ -36,7 +35,13 @@ module.exports = (sequelize, DataTypes, schema) => {
     }, { 
         schema,
         tableName: 'products',
-        timestamps: false
+        timestamps: false,
+        indexes: [
+            {
+                unique: true,
+                fields: ['name', 'categoryId']
+            }
+        ]
     });
 
     table.associate = (models) => {

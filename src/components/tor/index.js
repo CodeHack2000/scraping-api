@@ -1,3 +1,5 @@
+const Zlib = require('zlib');
+
 const torConfig = require('./config/config');
 const AxiosAgentService = require('./services/axiosAgentService');
 const TorControlService = require('./services/torControlService');
@@ -67,7 +69,8 @@ class Tor {
             await torInstance.torControl.getNewCircuit();
             
             // Generate a new user agent
-            torInstance.axiosAgent.generateNewUserAgent();
+            //torInstance.axiosAgent.generateNewUserAgent();
+            torInstance.axiosAgent.generateNewHeaders();
 
             success = true;
         }
@@ -152,9 +155,9 @@ class Tor {
         return ip || '';
     }
 
-    async doGetRequest(torIntanceId, url) {
+    async doGetRequest(torIntanceId, url, isFirstRequest = false) {
 
-        const maxRetries = 5;
+        const maxRetries = isFirstRequest ? 20 : 5;
         let attempt = 0;
         const response = { success: false, error: '', data: '' };
 
@@ -166,17 +169,19 @@ class Tor {
 
                 const torInstance = this._getTorInstance(torIntanceId);
 
-                const { data, status } = await torInstance.axiosAgent.get(url);
+                const { data, status, headers } = await torInstance.axiosAgent.get(url);
 
-                if (status === 200 && typeof data === 'string' && data.includes('<!doctype html>')) {
+                const _data = await this.decodeResponse(headers, data);
+
+                if (status === 200 && typeof _data === 'string' && _data.includes('<!doctype html>')) {
 
                     response.success = true;
-                    response.data = data;
+                    response.data = _data;
 
                     this.logger.info(`<Tor> Successfully fetched URL with tor instance ID ${torIntanceId} on attempt #${attempt + 1}`);
                     break; // Exit loop if the response is valid
                 }
-                else if (typeof data === 'object') {
+                else if (typeof _data === 'object') {
 
                     this.logger.warn(`<Tor> Response does not contain valid HTML on attempt #${attempt + 1}: ` + JSON.stringify(data));
                 }
@@ -208,6 +213,42 @@ class Tor {
         }
 
         return response;
+    }
+
+    async decodeResponse(headers = {}, data = '') {
+
+        const encoding = headers?.['content-encoding'] || '';
+        let decodedData;
+
+        try {
+
+            this.logger.info('<Tor> Decoding response with encoding: ' + encoding);
+
+            const bufferData = Buffer.isBuffer(data) ? data : Buffer.from(data);
+
+            if (encoding === 'gzip') {
+
+                decodedData = Zlib.gunzipSync(bufferData).toString('utf-8');
+            }
+            else if (encoding === 'deflate') {
+    
+                decodedData = Zlib.inflateSync(bufferData).toString('utf-8');
+            }
+            else if (encoding === 'br') {
+    
+                decodedData = Zlib.brotliDecompressSync(bufferData).toString('utf-8');
+            }
+            else {
+    
+                decodedData = bufferData?.toString('utf-8');
+            }
+        }
+        catch (error) {
+
+            this.logger.error('<Tor> Error decoding response: ' + error.message);
+        }
+
+        return decodedData;
     }
 }
 

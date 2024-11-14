@@ -52,8 +52,6 @@ class TestTableService {
             }
         }
 
-        console.log(insertedValues[0].id);
-
         return insertedValues;
     }
 }

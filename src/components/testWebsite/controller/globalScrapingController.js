@@ -75,9 +75,13 @@ class GlobalScrapingController {
                     }
                 }
 
-                const insertedData = await this.inventoryDB.testTableService.insTestTableBatch(categoryProducts);
+                let insertedData = [];
+                if (categoryProducts.length > 0) {
 
-                if (insertedData?.length === 0) {
+                    insertedData = await this.inventoryDB.testTableService.insTestTableBatch(categoryProducts);
+                }
+
+                if (insertedData?.length === 0 && categoryProducts.length > 0) {
 
                     const filename = `not-inserted-data-${Moment().toDate().toISOString()}.json`;
 

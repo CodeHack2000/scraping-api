@@ -25,8 +25,7 @@ module.exports = {
                 }
             },
             price: {
-                type: Sequelize.DOUBLE,
-                allowNull: false
+                type: Sequelize.STRING
             },
             url: {
                 type: Sequelize.TEXT,

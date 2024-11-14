@@ -7,24 +7,24 @@ class PricesMapper {
         this.commonMapper = CommonMapper;
     }
 
-    static insPrice(price) {
+    insPrice(price) {
 
         return {
-            productId: this.commonMapper.toInt(price?.productId),
-            websiteId: this.commonMapper.toString(price?.websiteId),
-            price: this.commonMapper.toFloat(price?.price),
+            productId: this.commonMapper.toString(price?.productId, null),
+            websiteId: this.commonMapper.toString(price?.websiteId, null),
+            price: this.commonMapper.toString(price?.price),
             url: this.commonMapper.toString(price?.url),
             updatedAt: Moment().toDate()
         };
     }
 
-    static updPrice(price) {
+    updPrice(price) {
 
         return {
             id: this.commonMapper.toInt(price?.id),
             productId: this.commonMapper.toInt(price?.productId),
             websiteId: this.commonMapper.toString(price?.websiteId),
-            price: this.commonMapper.toFloat(price?.price),
+            price: this.commonMapper.toString(price?.price),
             url: this.commonMapper.toString(price?.url),
             updatedAt: Moment().toDate()
         };

@@ -24,15 +24,17 @@ class DatabaseService {
             this.logger.info('<FarmaciaSantaMarta> [databaseService] - Mapping products...');
 
             // Obtain the products from the data
-            const products = dataBatch.map((obj) => {
+            const products = dataBatch
+                .filter((obj) => obj?.name)
+                .map((obj) => {
 
-                return {
-                    name: obj?.name,
-                    categoryId: categoryId,
-                    description: obj?.description,
-                    msrm: obj?.msrm
-                };
-            });
+                    return {
+                        name: obj?.name,
+                        categoryId: categoryId,
+                        description: obj?.description,
+                        msrm: obj?.msrm
+                    };
+                });
 
             this.logger.info('<FarmaciaSantaMarta> [databaseService] - Inserting products...');
             
@@ -45,7 +47,7 @@ class DatabaseService {
             const prices = [];
             for (const obj of dataBatch) {
 
-                const product = insertedProducts?.find((prod) => prod?.name === obj?.name);
+                const product = insertedProducts?.find((prod) => prod?.name === obj?.name && prod?.id);
 
                 const price = {
                     productId: product?.id,
@@ -60,9 +62,9 @@ class DatabaseService {
             this.logger.info('<FarmaciaSantaMarta> [databaseService] - Inserting prices...');
 
             // Insert the prices to the database
-            const insertedPrices =await this.inventoryDB.pricesService.insPricesBatch(prices);
+            const insertedPrices = await this.inventoryDB.pricesService.insPricesBatch(prices);
 
-            success = insertedPrices?.length > 0 && insertedPrices?.length > 0;
+            success = insertedProducts?.length > 0 && insertedPrices?.length > 0;
 
             this.logger.debug(`<FarmaciaSantaMarta> [databaseService] - Inserted ${insertedProducts?.length} products and ${insertedPrices?.length} prices`);
         }

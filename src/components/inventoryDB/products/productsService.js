@@ -130,7 +130,7 @@ class ProductsService {
 
         this.logger.info('<ProductsService> Inserting products with batch...');
 
-        let insertedProducts = [];
+        const insertedProducts = [];
         let transaction = null;
 
         try {
@@ -142,7 +142,7 @@ class ProductsService {
             transaction = await DB.sequelize.transaction();
 
             this.logger.info('<ProductsService> Inserting products...');
-            insertedProducts = await ProductsDB.insProductsBatch(mappedProducts, transaction);
+            insertedProducts.push( ...await ProductsDB.insProductsBatch(mappedProducts, transaction) );
 
             this.logger.info('<ProductsService> Committing transaction...');
             await transaction.commit();
@@ -158,7 +158,7 @@ class ProductsService {
             }
         }
 
-        return insertedProducts?.dataValues || [];
+        return insertedProducts;
     }
 
 }

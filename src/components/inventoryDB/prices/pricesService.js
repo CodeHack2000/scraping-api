@@ -127,7 +127,7 @@ class PricesService {
 
         this.logger.info('<PricesService> Inserting prices with batch...');
 
-        let insertedPrices = [];
+        const insertedPrices = [];
         let transaction = null;
 
         try {
@@ -139,7 +139,7 @@ class PricesService {
             transaction = await DB.sequelize.transaction();
 
             this.logger.info('<PricesService> Inserting prices...');
-            insertedPrices = await PricesDB.insPricesBatch(mappedPrices, transaction);
+            insertedPrices.push( ...await PricesDB.insPricesBatch(mappedPrices, transaction) );
 
             this.logger.info('<PricesService> Committing transaction...');
             await transaction.commit();
@@ -155,7 +155,7 @@ class PricesService {
             }
         }
 
-        return insertedPrices?.dataValues;
+        return insertedPrices;
     }
 
 }

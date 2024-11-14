@@ -39,7 +39,13 @@ module.exports = {
         }, {
             schema: DbConfig.schema,
             tableName: 'products',
-            timestamps: false
+            timestamps: false,
+            indexes: [
+                {
+                    unique: true,
+                    fields: ['name', 'categoryId']
+                }
+            ]
         });
     },
     down: (queryInterface) => {

@@ -7,7 +7,7 @@ class CategoriesMapper {
         this.commonMapper = CommonMapper;
     }
 
-    static insCategory(category) {
+    insCategory(category) {
 
         return {
             name: this.commonMapper.toString(category?.name),
@@ -16,7 +16,7 @@ class CategoriesMapper {
         };
     }
 
-    static updCategory(category) {
+    updCategory(category) {
 
         return {
             id: this.commonMapper.toInt(category?.id),
