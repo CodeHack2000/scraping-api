@@ -35,7 +35,7 @@ class GlobalMapper {
         }
         else if (category.includes('saude-e-bem-estar')) {
 
-            mappedCategory = 'Saúde e Bem Estar';
+            mappedCategory = 'Saúde e Bem-Estar';
         }
         else if (category.includes('saude-oral')) {
 

@@ -63,7 +63,8 @@ class CategoriesDB {
             categoriesBatch,
             {
                 updateOnDuplicate: ['description', 'updatedAt'],
-                transaction
+                transaction,
+                batchSize: 1000
             }
         );
     }

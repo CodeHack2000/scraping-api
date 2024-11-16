@@ -14,7 +14,8 @@ class PricesMapper {
             websiteId: this.commonMapper.toString(price?.websiteId, null),
             price: this.commonMapper.toString(price?.price),
             url: this.commonMapper.toString(price?.url),
-            updatedAt: Moment().toDate()
+            updatedAt: Moment().toDate(),
+            createdAt: Moment().toDate()
         };
     }
 

@@ -56,7 +56,8 @@ class WebsitesDB {
             websitesBatch,
             {
                 updateOnDuplicate: ['updatedAt'],
-                transaction
+                transaction,
+                batchSize: 1000
             }
         );
     }

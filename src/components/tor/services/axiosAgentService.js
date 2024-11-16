@@ -1,5 +1,4 @@
 const { SocksProxyAgent } = require('socks-proxy-agent');
-const UserAgent = require('user-agents');
 const axios = require('axios');
 const { CookieJar } = require('tough-cookie');
 const { wrapper } = require('axios-cookiejar-support');
@@ -11,7 +10,6 @@ class AxiosAgentService {
 
         this.agent = new SocksProxyAgent(`socks://${host}:${port}`);
         this.jar = new CookieJar();
-        this.userAgent = new UserAgent();
 
         this.headerGenerator = new HeaderGenerator({
             browsers: ['chrome', 'firefox', 'safari'],
@@ -20,6 +18,7 @@ class AxiosAgentService {
         });
 
         this.client = this._getClient();
+        this.clientManual = this._getClientManual();
     }
 
     /**
@@ -46,10 +45,22 @@ class AxiosAgentService {
         return wrapper(client, { jar: this.jar });
     }
 
-    generateNewUserAgent() {
+    _getClientManual() {
 
-        this.userAgent = new UserAgent();
-        this.client.defaults.headers['User-Agent'] = this.userAgent.toString();
+        const headers = this.headerGenerator.getHeaders();
+
+        headers['accept'] = headers['accept']?.includes('text/html')
+            ? `text/html,${headers['accept']}`
+            : 'text/html';
+
+        headers['accept-encoding'] = 'gzip, deflate, br';
+
+        return axios.create({
+            httpsAgent: this.agent,
+            httpAgent: this.agent,
+            headers,
+            withCredentials: true   // Enable support for cookies
+        });
     }
 
     generateNewHeaders() {
@@ -67,6 +78,25 @@ class AxiosAgentService {
     async get(url, config = {}) {
 
         return await this.client.get(url, config);
+    }
+
+    async getManual(url, config = {}) {
+
+        /*const cookies = await this.jar.getCookieString(url);
+
+        config.headers = { ...config.headers, cookie: cookies };*/
+
+        const response = await this.clientManual.get(url, config);
+
+        const setCookies = response?.headers?.['set-cookie'];
+        if (setCookies) {
+
+            await Promise.all(setCookies.map((cookie) => this.jar.setCookie(cookie, url)));
+        }
+
+        console.log(this.jar);
+
+        return response;
     }
 
     async post(url, data = {}, config = {}) {

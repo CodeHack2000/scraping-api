@@ -14,7 +14,8 @@ class TestTableDB {
             testTableBatch,
             {
                 updateOnDuplicate: ['wins', 'updatedAt'],
-                transaction
+                transaction,
+                batchSize: 1000
             }
         );
     }

@@ -21,17 +21,19 @@ class PricesDB {
      */
     static async updPrice(price) {
 
-        const affectedRows = await prices.update(
+        const [count, rows] = await prices.update(
 
             price,
             {
                 where: {
                     id: price.id
-                }
+                },
+                
+                returning: true
             }
         );
 
-        return !!affectedRows?.[0];
+        return { count, rows };
     }
 
     /**
@@ -62,7 +64,8 @@ class PricesDB {
             pricesBatch,
             {
                 updateOnDuplicate: ['price', 'url', 'updatedAt'],
-                transaction
+                transaction,
+                batchSize: 1000
             }
         );
     }

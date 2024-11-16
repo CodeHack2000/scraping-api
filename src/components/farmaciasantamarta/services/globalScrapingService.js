@@ -48,19 +48,31 @@ class GlobalScrapingService {
                 charset: 'UTF-8'
             });
 
-            const lastPage = $('nav.ct-pagination div.ct-hidden-sm a.page-numbers').last().text().trim();
+            const isValid = $('head title').text().trim();
+
+            // Validate if the page is valid
+            if (!['One moment, please'].includes(isValid)) {
+
+                const lastPage = $('nav.ct-pagination div.ct-hidden-sm a.page-numbers').last().text().trim();
     
-            $('ul.products li.product').each((_, element) => {
-            
-                const product = {
-                    url: $(element).find('a').attr('href'),
-                    name: $(element).find('a h2').text().trim(),
-                    price: $(element).find('a bdi').text().replace(/[^0-9,]/g, '').trim(),
-                    lastPage: lastPage
-                };
+                $('ul.products li.product').each((_, element) => {
                 
-                products.push(product);
-            });
+                    const product = {
+                        url: $(element).find('a').attr('href'),
+                        name: $(element).find('a h2').text().trim(),
+                        price: $(element).find('a bdi').last().text().replace(/[^0-9,]/g, '').trim(),
+                        lastPage: lastPage
+                    };
+
+                    if(product.price?.indexOf(',') > -1){
+                    
+                        const parts = product.price.split(',');
+                        product.price = parts[parts.length - 1];
+                    }
+                    
+                    products.push(product);
+                });
+            }
         }
         catch (error) {
 

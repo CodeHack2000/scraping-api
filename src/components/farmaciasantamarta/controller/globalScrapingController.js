@@ -30,12 +30,15 @@ class GlobalScrapingController {
             status: 400,
             products: []
         };
+        let universalTorInstanceId = null;
 
         try {
 
             this.logger.info('<FarmaciaSantaMarta> Scraping all categories...');
 
-            const universalTorInstanceId = this.torInstances.universalTorInstanceId;
+            universalTorInstanceId = this.torInstances.universalTorInstanceId;
+
+            await this.torInstances.initPuppeteer(universalTorInstanceId);
 
             const categories = config.categories;
             const websiteId = (await this.inventoryDB.websitesDB.getWebsiteByUrl(config.urlBase))?.id;
@@ -47,18 +50,40 @@ class GlobalScrapingController {
                 const category = categories[_categoryId];
                 const categoryUrl = category.url;
                 const url = config.urlBase + categoryUrl;
+                
                 const categoryProducts = [];
 
                 const mappedCategory = GlobalMapper.mapCategoryToDB(categoryUrl);
                 const categoryId = (await this.inventoryDB.categoriesDB.getCategoryByName(mappedCategory))?.id;
 
-                const response = await this.torInstances.doGetRequest(universalTorInstanceId, url);
+                const response = await this.torInstances.doGetRequestBrowser(universalTorInstanceId, url);
 
                 if (response?.success) {
 
                     const jsonData = this.service.extractHtmlToJson(response.data);
+                    
+                    let filteredData = jsonData.filter((item) => item?.name) || [];
+                    let tryCount = 0;
+                    while (
+                        (
+                            filteredData.length === 0 
+                            || !filteredData?.some((item) => item?.lastPage)
+                        )
+                        && tryCount < 3
+                    ) {
 
-                    categoryProducts.push(...jsonData);
+                        await new Promise(resolve => setTimeout(resolve, 1000));
+
+                        const _response = await this.torInstances.doGetRequestBrowser(universalTorInstanceId, url);
+
+                        const _jsonData = this.service.extractHtmlToJson(_response?.data);
+
+                        filteredData = _jsonData.filter((item) => item?.name) || [];
+
+                        tryCount++;
+                    }
+
+                    categoryProducts.push(...filteredData);
                 }
                 else {
 
@@ -82,9 +107,9 @@ class GlobalScrapingController {
                     }
                 }
 
-                const insertedData = await this.databaseService.insertDataToDB(categoryProducts, categoryId, websiteId);
+                const insertedDataSuccess = await this.databaseService.insertDataToDB(categoryProducts, categoryId, websiteId);
 
-                if (insertedData?.length === 0) {
+                if (!insertedDataSuccess) {
 
                     const filename = `not-inserted-data_farmaciasantamarta_${Moment().toDate().toISOString()}.json`;
 
@@ -121,10 +146,57 @@ class GlobalScrapingController {
 
             this.logger.error('<FarmaciaSantaMarta> Error scraping all categories: ' + error.message);
         }
+        finally {
+
+            if (universalTorInstanceId) {
+
+                await this.torInstances.closePuppeteer(universalTorInstanceId);
+            }
+        }
 
         return res
             .status(result.status)
             .json(result.products);
+    }
+
+    /**
+     * Gets all categories URLs from the config file.
+     * @param {Object} req - The Express request object.
+     * @param {Object} res - The Express response object.
+     * @returns {Promise<void>} Resolves with the response of the request.
+     */
+    getAllCategoriesUrls(req, res) {
+
+        this.logger.info('<FarmaciaSantaMarta> Getting all categories urls...');
+
+        const result = {
+            status: 400,
+            categoriesUrls: []
+        };
+
+        try {
+
+            const categories = config.categories;
+            
+            for (const category of categories) {
+
+                const categoryUrl = category.url;
+                const url = config.urlBase + categoryUrl;
+
+                result.categoriesUrls.push(url);
+            }
+
+            result.status = 200;
+        }
+        catch(error) {
+
+            this.logger.error('<FarmaciaSantaMarta> Error getting all categories urls: ' + error.message);
+            result.status = 500;
+        }
+
+        return res
+            .status(result.status)
+            .json(result.categoriesUrls);
     }
 }
 

@@ -3,6 +3,7 @@ const Zlib = require('zlib');
 const torConfig = require('./config/config');
 const AxiosAgentService = require('./services/axiosAgentService');
 const TorControlService = require('./services/torControlService');
+const PuppeteerService = require('./services/puppeteerService');
 
 class Tor {
 
@@ -17,7 +18,7 @@ class Tor {
 
     _getTorNumActiveInstances() {
 
-        return this.torActiveInstances.filter((torInstance) => torInstance !== null).length;
+        return this.torActiveInstances.filter((torInstance) => torInstance !== null)?.length;
     }
 
     _getFirtsAvailableTorInstanceIndex() {
@@ -33,11 +34,10 @@ class Tor {
 
         try {
 
-            this.logger.debug(this.torActiveInstances);
+            console.log('Total active instances: ' + this.torActiveInstances?.length + ' Requested: ' + torIntanceId);
 
             if (torIntanceId && this.torActiveInstances?.[torIntanceId - 1]) {
 
-                this.logger.debug(this.torActiveInstances[torIntanceId - 1]);
                 torIntance = this.torActiveInstances[torIntanceId - 1];
             }
             else {
@@ -69,8 +69,9 @@ class Tor {
             await torInstance.torControl.getNewCircuit();
             
             // Generate a new user agent
-            //torInstance.axiosAgent.generateNewUserAgent();
-            torInstance.axiosAgent.generateNewHeaders();
+            //torInstance.axiosAgent.generateNewHeaders();
+
+            await torInstance.puppeteer.injectNewPage();
 
             success = true;
         }
@@ -95,12 +96,14 @@ class Tor {
             const torInstanceData = torConfig.torInstances[torAvailableIndex];
 
             const torControl = new TorControlService(this.logger, torConfig.host, torInstanceData);
-            const axiosAgent = new AxiosAgentService(torConfig.host, torInstanceData.port);
+            //const axiosAgent = new AxiosAgentService(torConfig.host, torInstanceData.port);
+            const puppeteer = new PuppeteerService(torConfig.host, torInstanceData.port);
 
             const torInstance = {
                 ...torInstanceData,
                 torControl: torControl,
-                axiosAgent: axiosAgent
+                //axiosAgent: axiosAgent,
+                puppeteer: puppeteer
             };
 
             this.torActiveInstances[torAvailableIndex] = torInstance;
@@ -169,7 +172,7 @@ class Tor {
 
                 const torInstance = this._getTorInstance(torIntanceId);
 
-                const { data, status, headers } = await torInstance.axiosAgent.get(url);
+                const { data, status, headers } = await torInstance.axiosAgent.getManual(url);
 
                 const _data = await this.decodeResponse(headers, data);
 
@@ -215,6 +218,71 @@ class Tor {
         return response;
     }
 
+    async doGetRequestBrowser(torIntanceId, url, isFirstRequest = false) {
+
+        const maxRetries = isFirstRequest ? 20 : 5;
+        const response = { success: false, error: '', data: '' };
+        let attempt = 0;
+        let torInstance = null;
+
+        try {
+
+            torInstance = this._getTorInstance(torIntanceId);
+
+            while (attempt < maxRetries) {
+
+                this.logger.info(`<Tor> Attempt #${attempt + 1} to fetch URL with tor instance ID ${torIntanceId}: ${url}`);
+
+                await torInstance.puppeteer.page.goto(url);
+
+                const html = await torInstance.puppeteer.page.content();
+
+                if (html?.includes('</html>')) {
+
+                    response.success = true;
+                    response.data = html;
+
+                    this.logger.info(`<Tor> Successfully fetched URL with tor instance ID ${torIntanceId} on attempt #${attempt + 1}`);
+                    break; // Exit loop if the response is valid
+                }
+
+                attempt += 1;
+
+                // Wait a small interval before trying again, if necessary
+                if (attempt <= maxRetries && response.success === false) {
+                    
+                    // Refresh the tor instance
+                    await new Promise(resolve => setTimeout(resolve, 10000));
+                    await this.refreshTorInstance(torIntanceId);
+                }
+
+            }
+        }
+        catch (error) {
+
+            this.logger.error(`<Tor> Error fetching URL with tor instance ID ${torIntanceId} on attempt #${attempt + 1}. ${error.message}`);
+            response.error = error.message;
+        }
+
+        if (!response.success) {
+            this.logger.error(`<Tor> Failed to fetch URL with tor instance ID ${torIntanceId} after ${maxRetries} attempts.`);
+        }
+
+        return response;
+    }
+
+    async initPuppeteer(torIntanceId) {
+        
+        const torInstance = this._getTorInstance(torIntanceId);
+        await torInstance.puppeteer.init();
+    }
+
+    async closePuppeteer(torIntanceId) {
+
+        const torInstance = this._getTorInstance(torIntanceId);
+        await torInstance.puppeteer.closeBrowser();
+    }
+
     async decodeResponse(headers = {}, data = '') {
 
         const encoding = headers?.['content-encoding'] || '';
@@ -249,6 +317,56 @@ class Tor {
         }
 
         return decodedData;
+    }
+
+    async getCookies(torIntanceId, url) {
+
+        try {
+
+            this.logger.info('<Tor> Getting cookies...');
+
+            let tryCount = 0;
+
+            const torInstance = this._getTorInstance(torIntanceId);
+
+            while (tryCount < 3 && !torInstance.axiosAgent.jar.getCookies(url).length) {
+
+                const result = await torInstance.axiosAgent.getManual(url);
+
+                let aux = { ...result };
+                delete aux.data;
+                console.log(aux);
+
+                tryCount++;
+
+                await new Promise(resolve => setTimeout(resolve, 5000));
+            }
+        }
+        catch(error) {
+
+            this.logger.error('<Tor> Error getting cookies: ' + error.message);
+        }
+    }
+
+    async hasCookies(torIntanceId, url) {
+
+        let cookies = [];
+
+        try {
+
+            const torInstance = this._getTorInstance(torIntanceId);
+
+            console.log('debug1');
+            cookies.push( ...await torInstance.axiosAgent.jar.getCookies(url) );
+            console.log(cookies);
+            console.log('debug2');
+        }
+        catch (error) {
+
+            this.logger.error('<Tor> Error getting cookies: ' + error.message);
+        }
+
+        return cookies?.length > 0;
     }
 }
 

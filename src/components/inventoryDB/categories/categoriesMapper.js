@@ -12,7 +12,8 @@ class CategoriesMapper {
         return {
             name: this.commonMapper.toString(category?.name),
             description: this.commonMapper.toString(category?.description),
-            updatedAt: Moment().toDate()
+            updatedAt: Moment().toDate(),
+            createdAt: Moment().toDate()
         };
     }
 

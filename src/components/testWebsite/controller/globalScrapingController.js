@@ -27,12 +27,15 @@ class GlobalScrapingController {
             status: 400,
             products: []
         };
+        let universalTorInstanceId = null;
 
         try {
 
             this.logger.info('<TESTWEBSITE> Scraping all categories...');
 
             const universalTorInstanceId = this.torInstances.universalTorInstanceId;
+
+            await this.torInstances.initPuppeteer(universalTorInstanceId);
 
             const categories = config.categories;
 
@@ -45,7 +48,7 @@ class GlobalScrapingController {
                 const url = config.urlBase + categoryUrl;
                 const categoryProducts = [];
 
-                const response = await this.torInstances.doGetRequest(universalTorInstanceId, url);
+                const response = await this.torInstances.doGetRequestBrowser(universalTorInstanceId, url);
 
                 if (response?.success) {
 
@@ -111,6 +114,13 @@ class GlobalScrapingController {
         catch (error) {
 
             this.logger.error('<TESTWEBSITE> Error scraping all categories: ' + error.message);
+        }
+        finally {
+
+            if (universalTorInstanceId) {
+
+                await this.torInstances.closePuppeteer(universalTorInstanceId);
+            }
         }
 
         return res

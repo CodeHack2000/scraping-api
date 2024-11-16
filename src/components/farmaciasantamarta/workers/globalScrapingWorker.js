@@ -58,37 +58,56 @@ class GlobalScrapingWorker {
 
         let torInstanceId = this._sendRequest('getNewTorInstance');
         let isActive = true;
+        let url = '';
 
-        while (isActive) {
+        try {
 
-            if (!this.urls.length) {
+            await this._sendRequest('initPuppeteer');
 
-                await new Promise(resolve => setTimeout(resolve, 1000));
+            while (isActive) {
 
                 if (!this.urls.length) {
 
-                    isActive = false;
+                    await new Promise(resolve => setTimeout(resolve, 1000));
+
+                    if (!this.urls.length) {
+
+                        isActive = false;
+                    }
+
+                    continue;
                 }
 
-                continue;
-            }
+                const url = this.urls.shift();
 
-            const url = this.urls.shift();
-
-            try {
 
                 if (!torInstanceId) {
 
                     torInstanceId = this._sendRequest('getNewTorInstance');
                 }
 
-                const response = await this._sendRequest('doGetRequest', { url });
+                const response = await this._sendRequest('doGetRequestBrowser', { url });
 
                 if (response?.success) {
 
                     const jsonData = this.service.extractHtmlToJson(response.data);
 
-                    this.products = this.products.concat(jsonData);
+                    let filteredData = jsonData.filter((item) => item?.name) || [];
+                    let tryCount = 0;
+                    while (filteredData.length === 0 && tryCount < 3) {
+
+                        await new Promise(resolve => setTimeout(resolve, 1000));
+
+                        const _response = await this._sendRequest('doGetRequestBrowser', { url });
+
+                        const _jsonData = this.service.extractHtmlToJson(_response?.data);
+
+                        filteredData = _jsonData.filter((item) => item?.name) || [];
+
+                        tryCount++;
+                    }
+
+                    this.products.push(...filteredData);
                 }
                 else {
 
@@ -98,9 +117,16 @@ class GlobalScrapingWorker {
                 // Wait 1s after each request
                 await new Promise(resolve => setTimeout(resolve, 1000));
             }
-            catch (error) {
+        }
+        catch (error) {
 
-                parentPort.postMessage({ error: `Error while scraping ${url}: ${error.message}` });
+            parentPort.postMessage({ error: `Error while scraping ${url}: ${error.message}` });
+        }
+        finally {
+
+            if (torInstanceId) {
+            
+                await this._sendRequest('closePuppeteer');
             }
         }
     }
@@ -124,9 +150,9 @@ if (parentPort) {
     const workerInstance = new GlobalScrapingWorker(workerData);
     
     workerInstance.execute()
-        .then((results) => {
+        .then(() => {
 
-            parentPort.postMessage({ type: 'taskCompleted', results });
+            parentPort.postMessage({ type: 'taskCompleted' });
         })
         .catch((error) => {
 

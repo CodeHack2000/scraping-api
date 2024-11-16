@@ -19,6 +19,11 @@ class DatabaseService {
 
         this.logger.info('<FarmaciaSantaMarta> [databaseService] - Inserting data to database...');
 
+        if (dataBatch?.length === 0) {
+
+            return success;
+        }
+
         try {
 
             this.logger.info('<FarmaciaSantaMarta> [databaseService] - Mapping products...');
@@ -39,7 +44,13 @@ class DatabaseService {
             this.logger.info('<FarmaciaSantaMarta> [databaseService] - Inserting products...');
             
             // Insert the products to the database
-            const insertedProducts = await this.inventoryDB.productsService.insProductsBatch(products);
+            const dbProducts = [];
+            for (const product of products) {
+
+                const prodId = await this.inventoryDB.productsService.setProduct(product);
+
+                dbProducts.push({ id: prodId, ...product });
+            }
 
             this.logger.info('<FarmaciaSantaMarta> [databaseService] - Mapping prices...');
 
@@ -47,7 +58,7 @@ class DatabaseService {
             const prices = [];
             for (const obj of dataBatch) {
 
-                const product = insertedProducts?.find((prod) => prod?.name === obj?.name && prod?.id);
+                const product = dbProducts?.find((prod) => prod?.name === obj?.name && prod?.id);
 
                 const price = {
                     productId: product?.id,
@@ -62,11 +73,11 @@ class DatabaseService {
             this.logger.info('<FarmaciaSantaMarta> [databaseService] - Inserting prices...');
 
             // Insert the prices to the database
-            const insertedPrices = await this.inventoryDB.pricesService.insPricesBatch(prices);
+            const dbPrices = await this.inventoryDB.pricesService.insPricesBatch(prices);
 
-            success = insertedProducts?.length > 0 && insertedPrices?.length > 0;
+            success = dbProducts?.length > 0 && dbPrices?.length > 0;
 
-            this.logger.debug(`<FarmaciaSantaMarta> [databaseService] - Inserted ${insertedProducts?.length} products and ${insertedPrices?.length} prices`);
+            this.logger.debug(`<FarmaciaSantaMarta> [databaseService] - Handled ${dbProducts?.length} products and ${dbPrices?.length} prices`);
         }
         catch (error) {
 

@@ -24,17 +24,21 @@ class ProductsService {
         this.logger.info('<ProductsService> Inserting product...');
 
         let insertedProductId = null;
+        let mappedProduct;;
 
         try {
 
             this.logger.info('<ProductsService> Mapping product...');
-            const mappedProduct = this.productsMapper.insProduct(product);
+            mappedProduct = this.productsMapper.insProduct(product);
 
             insertedProductId = await ProductsDB.insProduct(mappedProduct);
 
             this.logger.info('<ProductsService> Product inserted successfully!');
         }
         catch (error) {
+
+            this.logger.info(JSON.stringify(product));
+            this.logger.info(JSON.stringify(mappedProduct));
 
             this.logger.error('<ProductsService> Error inserting product: ' + error.message);
         }
@@ -51,23 +55,28 @@ class ProductsService {
 
         this.logger.info('<ProductsService> Updating product...');
 
-        let productHasUpdated = false;
+        let updatedProduct = null;
+        let mappedProduct;
 
         try {
 
             this.logger.info('<ProductsService> Mapping product...');
-            const mappedProduct = this.productsMapper.updProduct(product);
+            mappedProduct = this.productsMapper.updProduct(product);
 
-            productHasUpdated = await ProductsDB.updProduct(mappedProduct);
+            const { rows } = await ProductsDB.updProduct(mappedProduct);
+            updatedProduct = rows?.[0];
 
             this.logger.info('<ProductsService> Product updated successfully!');
         }
         catch (error) {
 
+            this.logger.info(JSON.stringify(product));
+            this.logger.info(JSON.stringify(mappedProduct));
+
             this.logger.error('<ProductsService> Error updating product: ' + error.message);
         }
 
-        return productHasUpdated;
+        return updatedProduct;
     }
 
     /**
@@ -101,7 +110,7 @@ class ProductsService {
                     msrm: product?.msrm
                 };
 
-                result = await ProductsDB.updProduct(updateProduct);
+                result = await this.updProduct(updateProduct);
             }
             else if (!_product?.id) {
 
@@ -111,6 +120,7 @@ class ProductsService {
             else {
 
                 this.logger.warn('<ProductsService> The requested product already exists and can not be updated!');
+                result = _product;
             }
         }
         catch (error) {
@@ -136,7 +146,7 @@ class ProductsService {
         try {
 
             this.logger.info('<ProductsService> Mapping products...');
-            const mappedProducts = products.map((product) => this.productsMapper.insProduct(product));
+            const mappedProducts = products.map( (product) => this.productsMapper.insProduct(product) );
 
             this.logger.info('<ProductsService> Starting transaction...');
             transaction = await DB.sequelize.transaction();

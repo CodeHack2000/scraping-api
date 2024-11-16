@@ -23,7 +23,8 @@ class ProductsMapper {
             categoryId: this.commonMapper.toString(product?.categoryId, null),
             description: this.commonMapper.toString(product?.description),
             msrm: this.commonMapper.toBoolean(product?.msrm),
-            updatedAt: Moment().toDate()
+            updatedAt: Moment().toDate(),
+            createdAt: Moment().toDate()
         };
     }
 

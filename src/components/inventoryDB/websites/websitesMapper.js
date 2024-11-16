@@ -12,7 +12,8 @@ class WebsitesMapper {
         return {
             name: this.commonMapper.toString(website?.name),
             url: this.commonMapper.toString(website?.url),
-            updatedAt: Moment().toDate()
+            updatedAt: Moment().toDate(),
+            createdAt: Moment().toDate()
         };
     }
 

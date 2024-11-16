@@ -115,11 +115,7 @@ class WorkerPool {
  
                 if (result.type === 'taskCompleted') {
 
-                    const { url } = result;
-
                     this.logger.info(`<WorkerPool> Worker ${workerId} completed succesfully the tasks.`);
-
-                    this.workersPool[workerId].tasks = this.workersPool[workerId].tasks.filter((task) => task !== url);
                 }
                 else if (result.type === 'log') {
 
@@ -132,6 +128,33 @@ class WorkerPool {
                         this.workersPool[workerId].torInstanceId = this.torInstances.getNewTorInstance();
 
                         this._sendMessageToWorker(workerId, { requestId: result.requestId, torInstanceId: this.workersPool[workerId].torInstanceId });
+                    }
+                    else if (result.action === 'initPuppeteer') {
+
+                        await this.torInstances.initPuppeteer(this.workersPool[workerId].torInstanceId);
+
+                        this._sendMessageToWorker(workerId, { requestId: result.requestId });
+                    }
+                    else if (result.action === 'closePuppeteer') {
+                        
+                        await this.torInstances.closePuppeteer(this.workersPool[workerId].torInstanceId);
+
+                        this._sendMessageToWorker(workerId, { requestId: result.requestId });
+                    }
+                    else if (result.action === 'doGetRequestBrowser') {
+
+                        try {
+
+                            const response = await this.torInstances.doGetRequestBrowser(this.workersPool[workerId].torInstanceId, result.url);
+
+                            this.workersPool[workerId].tasks = this.workersPool[workerId].tasks.filter((task) => task !== result.url);
+                            
+                            this._sendMessageToWorker(workerId, { requestId: result.requestId, response });
+                        }
+                        catch (error) {
+
+                            this._sendMessageToWorker(workerId, { requestId: result.requestId, error: error.message });
+                        }
                     }
                     else if (result.action === 'doGetRequest') {
 

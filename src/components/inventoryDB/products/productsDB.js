@@ -23,17 +23,19 @@ class ProductsDB {
      */
     static async updProduct(product) {
 
-        const affectedRows = await products.update(
+        const [count, rows] = await products.update(
 
             product,
             {
                 where: {
                     id: product.id
-                }
+                },
+                
+                returning: true
             }
         );
 
-        return !!affectedRows?.[0];
+        return { count, rows };
     }
 
     /**
@@ -60,7 +62,9 @@ class ProductsDB {
             productsBatch,
             {
                 updateOnDuplicate: ['description', 'msrm', 'updatedAt'],
-                transaction
+                transaction,
+                batchSize: 1000,
+                validate: false
             }
         );
     }
