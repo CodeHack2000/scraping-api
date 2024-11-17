@@ -1,7 +1,11 @@
-const puppeteer = require('puppeteer');
+//const Puppeteer = require('Puppeteer');
 //const { newInjectedPage } = require('fingerprint-injector');
 const { FingerprintGenerator } = require('fingerprint-generator');
 const { FingerprintInjector } = require('fingerprint-injector');
+const Puppeteer = require('puppeteer-extra');
+const StealthPlugin = require('puppeteer-extra-plugin-stealth');
+
+Puppeteer.use(StealthPlugin());
 
 class PuppeteerService {
 
@@ -33,7 +37,7 @@ class PuppeteerService {
             '--ignoreHTTPSErrors'
         ];
 
-        this.browser = await puppeteer.launch({
+        this.browser = await Puppeteer.launch({
 
             headless: true,
             args,

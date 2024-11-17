@@ -56,7 +56,7 @@ class GlobalScrapingController {
                 const mappedCategory = GlobalMapper.mapCategoryToDB(categoryUrl);
                 const categoryId = (await this.inventoryDB.categoriesDB.getCategoryByName(mappedCategory))?.id;
 
-                const response = await this.torInstances.doGetRequestBrowser(universalTorInstanceId, url);
+                const response = await this.torInstances.doGetRequestBrowser(universalTorInstanceId, url, { isFirstRequest: true });
 
                 if (response?.success) {
 
@@ -74,7 +74,7 @@ class GlobalScrapingController {
 
                         await new Promise(resolve => setTimeout(resolve, 1000));
 
-                        const _response = await this.torInstances.doGetRequestBrowser(universalTorInstanceId, url);
+                        const _response = await this.torInstances.doGetRequestBrowser(universalTorInstanceId, url, { isFirstRequest: true });
 
                         const _jsonData = this.service.extractHtmlToJson(_response?.data);
 

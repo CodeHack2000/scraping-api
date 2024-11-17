@@ -62,6 +62,11 @@ module.exports = {
                     createdAt: now,
                     updatedAt: now
                 },
+                {
+                    name: 'Diversos',
+                    createdAt: now,
+                    updatedAt: now
+                },
             ],
             {}
         );

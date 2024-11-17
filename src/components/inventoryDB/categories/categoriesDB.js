@@ -69,6 +69,15 @@ class CategoriesDB {
         );
     }
 
+    /**
+     * Retrieves all categories from the database.
+     * @returns {Promise<Array<Categories>>} An array of all categories.
+     */
+    static async getAllCategories() {
+
+        return await categories.findAll();
+    }
+
 }
 
 module.exports = CategoriesDB;

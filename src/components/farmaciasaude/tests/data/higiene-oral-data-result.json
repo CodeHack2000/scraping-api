@@ -1,0 +1,62 @@
+[
+    {
+        "url": "https://www.test.com.pt/pt/loja-online/produto/activozone-dental-fresh-pasta-dentifrica-75ml",
+        "name": "ACTIVOZONE Dental Fresh Pasta Dentífrica, 75ml",
+        "price": "12.50"
+    },
+    {
+        "url": "https://www.test.com.pt/pt/loja-online/produto/aftaspray-20-ml",
+        "name": "Aftaspray, 20 ml",
+        "price": "13.95"
+    },
+    {
+        "url": "https://www.test.com.pt/pt/loja-online/produto/aftum-colutorio-150-ml",
+        "name": "Aftum Colutório, 150 ml",
+        "price": "13.75"
+    },
+    {
+        "url": "https://www.test.com.pt/pt/loja-online/produto/aftum-gel-oral-15ml",
+        "name": "Aftum Gel Oral, 15ml",
+        "price": "14.50"
+    },
+    {
+        "url": "https://www.test.com.pt/pt/loja-online/produto/algasiv-almofadinhas-adesivas-dentadura-inferior-18-unidades",
+        "name": "Algasiv Almofadinhas Adesivas Dentadura Inferior, 18 unidades",
+        "price": "9.50"
+    },
+    {
+        "url": "https://www.test.com.pt/pt/loja-online/produto/algasiv-almofadinhas-adesivas-dentadura-superior-18-unidades",
+        "name": "Algasiv Almofadinhas Adesivas Dentadura Superior, 18 unidades",
+        "price": "9.95"
+    },
+    {
+        "url": "https://www.test.com.pt/pt/loja-online/produto/aloclair-plus-gel-8ml",
+        "name": "Aloclair Plus Gel, 8ml",
+        "price": "12.50"
+    },
+    {
+        "url": "https://www.test.com.pt/pt/loja-online/produto/aloclair-plus-solucao-bucal-60ml",
+        "name": "Aloclair Plus Solução Bucal, 60ml",
+        "price": "14.25"
+    },
+    {
+        "url": "https://www.test.com.pt/pt/loja-online/produto/arthrodont-classic-dentifrico-calmante-80g",
+        "name": "Arthrodont Classic Dentífrico Calmante, 80g",
+        "price": "8.95"
+    },
+    {
+        "url": "https://www.test.com.pt/pt/loja-online/produto/arthrodont-colutorio-gengival-300ml",
+        "name": "Arthrodont Colutório Gengival, 300ml",
+        "price": "11.50"
+    },
+    {
+        "url": "https://www.test.com.pt/pt/loja-online/produto/arthrodont-protect-gel-dentifrico-75ml",
+        "name": "Arthrodont Protect Gel Dentífrico, 75ml",
+        "price": "8.95"
+    },
+    {
+        "url": "https://www.test.com.pt/pt/loja-online/produto/banale-escova-de-dentes-portatil",
+        "name": "Banale Escova de Dentes Portátil",
+        "price": "14.00"
+    }
+]

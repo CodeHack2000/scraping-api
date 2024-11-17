@@ -218,11 +218,14 @@ class Tor {
         return response;
     }
 
-    async doGetRequestBrowser(torIntanceId, url, isFirstRequest = false) {
+    async doGetRequestBrowser(torIntanceId, url, options = {}) {
+
+        const { isFirstRequest = false, doScrollDown = false } = options;
 
         const maxRetries = isFirstRequest ? 20 : 5;
         const response = { success: false, error: '', data: '' };
         let attempt = 0;
+        let attemptRefreshTorInstance = 3;
         let torInstance = null;
 
         try {
@@ -233,34 +236,82 @@ class Tor {
 
                 this.logger.info(`<Tor> Attempt #${attempt + 1} to fetch URL with tor instance ID ${torIntanceId}: ${url}`);
 
-                await torInstance.puppeteer.page.goto(url);
+                try {
 
-                const html = await torInstance.puppeteer.page.content();
+                    await torInstance.puppeteer.page.goto(url);
 
-                if (html?.includes('</html>')) {
+                    await torInstance.puppeteer.page.waitForNavigation({ waitUntil: 'domcontentloaded' });
 
-                    response.success = true;
-                    response.data = html;
+                    if (doScrollDown) {
 
-                    this.logger.info(`<Tor> Successfully fetched URL with tor instance ID ${torIntanceId} on attempt #${attempt + 1}`);
-                    break; // Exit loop if the response is valid
+                        await this._doScrollDown(torInstance);
+                    }
+
+                    const html = await torInstance.puppeteer.page.content();
+
+                    if (html?.includes('</html>')) {
+
+                        response.success = true;
+                        response.data = html;
+
+                        this.logger.info(`<Tor> Successfully fetched URL with tor instance ID ${torIntanceId} on attempt #${attempt + 1}`);
+                        break; // Exit loop if the response is valid
+                    }
+
+                    attempt++;
+                    attemptRefreshTorInstance--;
+
+                    // Wait a small interval before trying again, if necessary
+                    if (
+                        attempt <= maxRetries 
+                        && response.success === false
+                        && attemptRefreshTorInstance <= 0
+                    ) {
+                        
+                        attemptRefreshTorInstance = 3;
+
+                        // Refresh the tor instance
+                        await new Promise(resolve => setTimeout(resolve, 10000));
+                        await this.refreshTorInstance(torIntanceId);
+                    }
+                    else {
+
+                        // Wait 2-7 seconds before trying again
+                        await new Promise(resolve => setTimeout(resolve, Math.floor(Math.random() * 5000) + 2000));
+                    }
                 }
+                catch (err) {
+    
+                    this.logger.error(`<Tor> Error fetching URL with tor instance ID ${torIntanceId} on attempt #${attempt + 1}. ${err.message}`);
+                    response.error = err.message;
 
-                attempt += 1;
+                    attempt++;
+                    attemptRefreshTorInstance--;
 
-                // Wait a small interval before trying again, if necessary
-                if (attempt <= maxRetries && response.success === false) {
-                    
-                    // Refresh the tor instance
-                    await new Promise(resolve => setTimeout(resolve, 10000));
-                    await this.refreshTorInstance(torIntanceId);
+                    if (
+                        attempt <= maxRetries 
+                        && response.success === false
+                        && attemptRefreshTorInstance <= 0
+                    ) {
+                        
+                        attemptRefreshTorInstance = 3;
+
+                        // Refresh the tor instance
+                        await new Promise(resolve => setTimeout(resolve, 10000));
+                        await this.refreshTorInstance(torIntanceId);
+                    }
+                    else {
+
+                        // Wait 2seconds before trying again
+                        await new Promise(resolve => setTimeout(resolve, Math.floor(Math.random() * 5000) + 2000));
+                    }
+
                 }
-
             }
         }
         catch (error) {
 
-            this.logger.error(`<Tor> Error fetching URL with tor instance ID ${torIntanceId} on attempt #${attempt + 1}. ${error.message}`);
+            this.logger.error(`<Tor> Error doing loop to fetch URL with tor instance ID ${torIntanceId}. ${error.message}`);
             response.error = error.message;
         }
 
@@ -269,6 +320,43 @@ class Tor {
         }
 
         return response;
+    }
+
+    async _doScrollDown(torInstance) {
+
+        let count = 0;
+        const scrollPageToBottom = async () => {
+
+            count += 1;
+            console.log('Scrolling page ' + count);
+
+            await torInstance.puppeteer.page.evaluate(() => {
+                
+                // eslint-disable-next-line no-undef
+                window.scrollTo(0, document.body.scrollHeight);
+            });
+
+            // Wait 2.5s to page fully load
+            //await new Promise(resolve => setTimeout(resolve, 2500));
+            await torInstance.puppeteer.page.waitForTimeout(Math.floor(Math.random() * 5000) + 2000);
+        };
+        
+        // Scrolling in a loop until a certain condition is met
+        let previousHeight = 0;
+        while (true) {
+
+            await scrollPageToBottom();
+            // eslint-disable-next-line no-undef
+            const newHeight = await torInstance.puppeteer.page.evaluate(() => document.body.scrollHeight);
+
+            // Breaking the loop if no new content is loaded
+            if (newHeight === previousHeight) {
+
+                break;
+            }
+
+            previousHeight = newHeight;
+        }
     }
 
     async initPuppeteer(torIntanceId) {
