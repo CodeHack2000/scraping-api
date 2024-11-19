@@ -24,7 +24,7 @@ class ProductsService {
         this.logger.info('<ProductsService> Inserting product...');
 
         let insertedProductId = null;
-        let mappedProduct;;
+        let mappedProduct;
 
         try {
 

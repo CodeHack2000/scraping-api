@@ -27,6 +27,10 @@ class GlobalScrapingController {
             status: 400,
             products: []
         };
+        const options = {
+            isFirstRequest: true,
+            doScrollDown: false
+        };
         let universalTorInstanceId = null;
 
         try {
@@ -48,7 +52,7 @@ class GlobalScrapingController {
                 const url = config.urlBase + categoryUrl;
                 const categoryProducts = [];
 
-                const response = await this.torInstances.doGetRequestBrowser(universalTorInstanceId, url);
+                const response = await this.torInstances.doGetRequestBrowser(universalTorInstanceId, url, options);
 
                 if (response?.success) {
 

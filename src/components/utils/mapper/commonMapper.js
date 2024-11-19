@@ -12,13 +12,13 @@ class CommonMapper {
 
         let result;
 
-        if (typeof value === 'object') {
-
-            result = null;
-        }
-        else if (!value) {
+        if (value === null || value === undefined) {
 
             result = defaultValue;
+        }
+        else if (typeof value === 'object' || typeof value === 'function') {
+
+            result = null;
         }
         else {
 
@@ -42,13 +42,17 @@ class CommonMapper {
 
         let result;
 
-        if (typeof value === 'object') {
+        if (value === null || value === undefined) {
+            
+            result = defaultValue;
+        }
+        else if (typeof value === 'object' || typeof value === 'function') {
 
             result = null;
         }
-        else if (!value) {
+        else if (typeof value === 'boolean') {
 
-            result = defaultValue;
+            result = value ? 1 : 0;
         }
         else {
 
@@ -72,13 +76,13 @@ class CommonMapper {
 
         let result;
 
-        if (typeof value === 'object') {
+        if (value === null || value === undefined) {
+            
+            result = defaultValue;
+        }
+        else if (typeof value === 'object' || typeof value === 'function' || typeof value === 'boolean') {
 
             result = null;
-        }
-        else if (!value) {
-
-            result = defaultValue;
         }
         else {
 
@@ -92,35 +96,47 @@ class CommonMapper {
 
         let result;
 
-        if (typeof value === 'object') {
+        if (typeof value === 'boolean') {
+
+            result = value;
+        }
+        else if (value === null || value === undefined) {
+            
+            result = defaultValue;
+        }
+        else if (typeof value === 'object' || typeof value === 'function') {
 
             result = null;
         }
-        else if (!value) {
-
-            result = defaultValue;
-        }
         else if (
-            ('S', 'Sim', 'Y', 'Yes', 'True', '1')
-                .toUpperCase()
+            typeof value === 'string'
+            && ['S', 'SIM', 'Y', 'YES', 'TRUE', '1']
                 .includes(
                     value
-                        .toUpperCase()
-                        .trim()
+                        ?.toUpperCase()
+                        ?.trim()
                 )
         ) {
 
             result = true;
         }
         else if (
-            ('N', 'Não', 'No', 'False', '0')
-                .toUpperCase()
+            typeof value === 'string'
+            && ['N', 'NÃO', 'NAO', 'NO', 'FALSE', '0']
                 .includes(
                     value
-                        .toUpperCase()
-                        .trim()
+                        ?.toUpperCase()
+                        ?.trim()
                 )
         ) {
+
+            result = false;
+        }
+        else if (value === 1) {
+
+            result = true;
+        }
+        else if (value === 0) {
 
             result = false;
         }

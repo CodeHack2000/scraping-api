@@ -24,18 +24,22 @@ class GlobalScrapingController {
         this.databaseService = new DatabaseService(Logger, InventoryDB);
     }
 
-    //TODO: Em vez de obter a categoria cada vez em loop, preciso de obter logo todas antes do loop
     async scrapeAllCategories(req, res) {
 
         const result = {
             status: 400,
-            products: []
+            products: [],
+            categoryId: null
+        };
+        const options = {
+            isFirstRequest: true,
+            doScrollDown: false
         };
         let universalTorInstanceId = null;
 
         try {
 
-            this.logger.info('<FarmaciaSantaMarta> Scraping all categories...');
+            this.logger.info('<AFarmaciaOnline> Scraping all categories...');
 
             universalTorInstanceId = this.torInstances.universalTorInstanceId;
 
@@ -43,6 +47,7 @@ class GlobalScrapingController {
 
             const categories = config.categories;
             const websiteId = (await this.inventoryDB.websitesDB.getWebsiteByUrl(config.urlBase))?.id;
+            const categoriesDB = await this.inventoryDB.categoriesDB.getAllCategories();
 
             const notScrapedUrls = [];
 
@@ -50,14 +55,15 @@ class GlobalScrapingController {
 
                 const category = categories[_categoryId];
                 const categoryUrl = category.url;
-                const url = config.urlBase + categoryUrl;
+                const url = config.urlBase + categoryUrl + '/?pmax=60';
                 
                 const categoryProducts = [];
 
                 const mappedCategory = GlobalMapper.mapCategoryToDB(categoryUrl);
-                const categoryId = (await this.inventoryDB.categoriesDB.getCategoryByName(mappedCategory))?.id;
+                const categoryId = (categoriesDB?.find((categ) => categ?.name === mappedCategory))?.id;
+                result.categoryId = categoryId;
 
-                const response = await this.torInstances.doGetRequestBrowser(universalTorInstanceId, url, { isFirstRequest: true });
+                const response = await this.torInstances.doGetRequestBrowser(universalTorInstanceId, url, options);
 
                 if (response?.success) {
 
@@ -75,7 +81,7 @@ class GlobalScrapingController {
 
                         await new Promise(resolve => setTimeout(resolve, 1000));
 
-                        const _response = await this.torInstances.doGetRequestBrowser(universalTorInstanceId, url, { isFirstRequest: true });
+                        const _response = await this.torInstances.doGetRequestBrowser(universalTorInstanceId, url, options);
 
                         const _jsonData = this.service.extractHtmlToJson(_response?.data);
 
@@ -112,7 +118,7 @@ class GlobalScrapingController {
 
                 if (!insertedDataSuccess) {
 
-                    const filename = `not-inserted-data_farmaciasantamarta_${Moment().toDate().toISOString()}.json`;
+                    const filename = `not-inserted-data_afarmaciaonline_${Moment().toDate().toISOString()}.json`;
 
                     const filePath = Path.join(__dirname, '../../../data', filename);
 
@@ -124,7 +130,7 @@ class GlobalScrapingController {
 
                     Fs.writeFileSync(filePath, JSON.stringify(notInsertedData, null, 2));
 
-                    this.logger.warn(`<FarmaciaSantaMarta> The following batch may have data that could not been inserted: ${filePath}`);
+                    this.logger.warn(`<AFarmaciaOnline> The following batch may have data that could not been inserted: ${filePath}`);
                 }
 
                 result.products.push(...categoryProducts);
@@ -132,20 +138,20 @@ class GlobalScrapingController {
 
             if (notScrapedUrls.length > 0) {
 
-                const filename = `not-scraped-urls_farmaciasantamarta__${Moment().toDate().toISOString()}.json`;
+                const filename = `not-scraped-urls_afarmaciaonline_${Moment().toDate().toISOString()}.txt`;
 
                 const filePath = Path.join(__dirname, '../../../data', filename);
 
                 Fs.writeFileSync(filePath, JSON.stringify(notScrapedUrls, null, 2));
 
-                this.logger.warn(`<FarmaciaSantaMarta> The following urls were not scraped: ${filePath}`);
+                this.logger.warn(`<AFarmaciaOnline> The following urls were not scraped: ${filePath}`);
             }
 
             result.status = 200;
         }
         catch (error) {
 
-            this.logger.error('<FarmaciaSantaMarta> Error scraping all categories: ' + error.message);
+            this.logger.error('<AFarmaciaOnline> Error scraping all categories: ' + error.message);
         }
         finally {
 
@@ -157,7 +163,7 @@ class GlobalScrapingController {
 
         return res
             .status(result.status)
-            .json(result.products);
+            .json({ products: result.products, categoryId: result.categoryId });
     }
 
     /**
@@ -168,7 +174,7 @@ class GlobalScrapingController {
      */
     getAllCategoriesUrls(req, res) {
 
-        this.logger.info('<FarmaciaSantaMarta> Getting all categories urls...');
+        this.logger.info('<AFarmaciaOnline> Getting all categories urls...');
 
         const result = {
             status: 400,
@@ -178,7 +184,7 @@ class GlobalScrapingController {
         try {
 
             const categories = config.categories;
-            
+
             for (const category of categories) {
 
                 const categoryUrl = category.url;
@@ -191,7 +197,7 @@ class GlobalScrapingController {
         }
         catch(error) {
 
-            this.logger.error('<FarmaciaSantaMarta> Error getting all categories urls: ' + error.message);
+            this.logger.error('<AFarmaciaOnline> Error getting all categories urls: ' + error.message);
             result.status = 500;
         }
 

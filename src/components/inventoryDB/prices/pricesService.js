@@ -24,17 +24,21 @@ class PricesService {
         this.logger.info('<PricesService> Inserting price...');
 
         let insertedPriceId = null;
+        let mappedPrice;
 
         try {
 
             this.logger.info('<PricesService> Mapping price...');
-            const mappedPrice = this.pricesMapper.insPrice(price);
+            mappedPrice = this.pricesMapper.insPrice(price);
 
             insertedPriceId = await PricesDB.insPrice(mappedPrice);
 
             this.logger.info('<PricesService> Price inserted successfully!');
         }
         catch (error) {
+
+            this.logger.info(JSON.stringify(price));
+            this.logger.info(JSON.stringify(mappedPrice));
 
             this.logger.error('<PricesService> Error inserting price: ' + error.message);
         }
@@ -51,23 +55,28 @@ class PricesService {
 
         this.logger.info('<PricesService> Updating price...');
 
-        let priceHasUpdated = false;
+        let updatedPrice = false;
+        let mappedPrice;
 
         try {
 
             this.logger.info('<PricesService> Mapping price...');
-            const mappedPrice = this.pricesMapper.updPrice(price);
+            mappedPrice = this.pricesMapper.updPrice(price);
 
-            priceHasUpdated = await PricesDB.updPrice(mappedPrice);
+            const { rows } = await PricesDB.updPrice(mappedPrice);
+            updatedPrice = rows?.[0];
 
             this.logger.info('<PricesService> Price updated successfully!');
         }
         catch (error) {
 
+            this.logger.info(JSON.stringify(price));
+            this.logger.info(JSON.stringify(mappedPrice));
+
             this.logger.error('<PricesService> Error updating price: ' + error.message);
         }
 
-        return priceHasUpdated;
+        return updatedPrice;
     }
 
     /**
@@ -88,13 +97,17 @@ class PricesService {
 
             if (
                 _price?.id
-                && _price?.price !== price?.price
+                && (
+                    _price?.price !== price?.price
+                    || _price?.url !== price?.url
+                )
             ) {
 
                 this.logger.info('<PricesService> The price exists and can be updated!');
                 const updatePrice = {
                     id: _price?.id,
-                    price: price?.price
+                    price: price?.price,
+                    url: price?.url
                 };
 
                 result = await PricesDB.updPrice(updatePrice);
@@ -107,6 +120,7 @@ class PricesService {
             else {
 
                 this.logger.warn('<PricesService> The requested price already exists and can not be updated!');
+                result = _price;
             }
         }
         catch (error) {

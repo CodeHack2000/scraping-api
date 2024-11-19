@@ -4,6 +4,7 @@ const TorInstancesComponent = require('@tor');
 const UtilsComponent = require('@utils');
 const FarmaciaSantaMartaComponent = require('@farmaciasantamarta');
 const FarmaciaSaudeComponent = require('@farmaciasaude');
+const AFarmaciaOnlineComponent = require('@afarmaciaonline');
 const WorkerPoolComponent = require('@workerPool');
 const TaskQueueComponent = require('@taskQueue');
 const TestWebsiteComponent = require('@testwebsite');
@@ -45,6 +46,7 @@ const _db = {
 
 const farmaciaSantaMarta = new FarmaciaSantaMartaComponent(_utils, _tools, _db);
 const farmaciaSaude = new FarmaciaSaudeComponent(_utils, _tools, _db);
+const aFarmaciaOnline = new AFarmaciaOnlineComponent(_utils, _tools, _db);
 const testWebsite = new TestWebsiteComponent(_utils, _tools, _db);
 
 // Config
@@ -67,6 +69,7 @@ app.get('/', (req, res) => {
 
 app.use('/farmaciasantamarta', farmaciaSantaMarta.router);
 app.use('/farmaciasaude', farmaciaSaude.router);
+app.use('/afarmaciaonline', aFarmaciaOnline.router);
 app.use('/testwebsite', testWebsite.router);
 
 module.exports = app;

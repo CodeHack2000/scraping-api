@@ -17,6 +17,7 @@
     "@env": ".env",
     "@farmaciasantamarta": "src/components/farmaciasantamarta",
     "@farmaciasaude": "src/components/farmaciasaude",
+    "@afarmaciaonline": "src/components/afarmaciaonline",
     "@workerPool": "src/components/workerPool",
     "@taskQueue": "src/components/taskQueue",
     "@testwebsite": "src/components/testWebsite",

@@ -93,8 +93,7 @@ class GlobalScrapingController {
                     notScrapedUrls.push(url);
                 }
 
-                //const insertedDataSuccess = await this.databaseService.insertDataToDB(categoryProducts, categoryId, websiteId);
-                const insertedDataSuccess = true;
+                const insertedDataSuccess = await this.databaseService.insertDataToDB(categoryProducts, categoryId, websiteId);
 
                 if (!insertedDataSuccess) {
 

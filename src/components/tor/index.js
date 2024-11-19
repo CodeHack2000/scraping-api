@@ -240,9 +240,12 @@ class Tor {
 
                     await torInstance.puppeteer.page.goto(url);
 
-                    await torInstance.puppeteer.page.waitForNavigation({ waitUntil: 'domcontentloaded' });
+                    // TODO: Validar depois este parâmetro para os websites com load dinâmica, pois causa vários erros de timeout
+                    //await torInstance.puppeteer.page.waitForNavigation({ waitUntil: 'domcontentloaded' });
 
                     if (doScrollDown) {
+
+                        await new Promise(resolve => setTimeout(resolve, Math.floor(Math.random() * 5000) + 2000));
 
                         await this._doScrollDown(torInstance);
                     }
@@ -337,8 +340,7 @@ class Tor {
             });
 
             // Wait 2.5s to page fully load
-            //await new Promise(resolve => setTimeout(resolve, 2500));
-            await torInstance.puppeteer.page.waitForTimeout(Math.floor(Math.random() * 5000) + 2000);
+            await new Promise(resolve => setTimeout(resolve, Math.floor(Math.random() * 5000) + 2000));
         };
         
         // Scrolling in a loop until a certain condition is met

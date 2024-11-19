@@ -11,9 +11,12 @@ class ProductsDB {
      */
     static async insProduct(product) {
 
-        const createdProduct = await products.create(product);
+        const createdProduct = await products.create(product, {
 
-        return createdProduct.id;
+            returning: true
+        });
+
+        return createdProduct;
     }
 
     /**

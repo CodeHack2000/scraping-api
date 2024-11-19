@@ -1,5 +1,4 @@
 /* eslint-disable no-undef */
-// scraping_api/src/components/farmaciasaude/services/globalScrapingService.test.js
 
 const Fs = require('fs');
 const Path = require('path');
@@ -10,7 +9,8 @@ const htmlResult = require('../data/higiene-oral-data-result.json');
 describe('globalScrapingService', () => {
 
     const logger = {
-        log: jest.fn()
+        error: jest.fn(),
+        info: jest.fn()
     };
     const globalScrapingService = new GlobalScrapingService(logger, true);
 

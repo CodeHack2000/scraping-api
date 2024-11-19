@@ -9,9 +9,12 @@ class PricesDB {
      */
     static async insPrice(price) {
 
-        const createdPrice = await prices.create(price);
+        const createdPrice = await prices.create(price, {
 
-        return createdPrice.id;
+            returning: true
+        });
+
+        return createdPrice;
     }
 
     /**

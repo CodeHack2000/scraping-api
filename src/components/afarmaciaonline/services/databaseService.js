@@ -17,7 +17,7 @@ class DatabaseService {
 
         let success = false;
 
-        this.logger.info('<FarmaciaSaude> [databaseService] - Inserting data to database...');
+        this.logger.info('<AFarmaciaOnline> [databaseService] - Inserting data to database...');
 
         if (dataBatch?.length === 0) {
 
@@ -26,7 +26,7 @@ class DatabaseService {
 
         try {
 
-            this.logger.info('<FarmaciaSaude> [databaseService] - Mapping products...');
+            this.logger.info('<AFarmaciaOnline> [databaseService] - Mapping products...');
 
             // Obtain the products from the data
             const products = dataBatch
@@ -41,7 +41,7 @@ class DatabaseService {
                     };
                 });
 
-            this.logger.info('<FarmaciaSaude> [databaseService] - Inserting products...');
+            this.logger.info('<AFarmaciaOnline> [databaseService] - Inserting products...');
             
             // Insert the products to the database
             const dbProducts = [];
@@ -52,7 +52,7 @@ class DatabaseService {
                 dbProducts.push({ id: prod?.id, ...product });
             }
 
-            this.logger.info('<FarmaciaSaude> [databaseService] - Mapping prices...');
+            this.logger.info('<AFarmaciaOnline> [databaseService] - Mapping prices...');
 
             // Obtain the prices from the data
             const prices = [];
@@ -73,7 +73,7 @@ class DatabaseService {
                 }
             }
 
-            this.logger.info('<FarmaciaSaude> [databaseService] - Inserting prices...');
+            this.logger.info('<AFarmaciaOnline> [databaseService] - Inserting prices...');
 
             // Insert the prices to the database
             const dbPrices = [];
@@ -86,11 +86,11 @@ class DatabaseService {
 
             success = dbProducts?.length > 0 && dbPrices?.length > 0;
 
-            this.logger.debug(`<FarmaciaSaude> [databaseService] - Handled ${dbProducts?.length} products and ${dbPrices?.length} prices`);
+            this.logger.debug(`<AFarmaciaOnline> [databaseService] - Handled ${dbProducts?.length} products and ${dbPrices?.length} prices`);
         }
         catch (error) {
 
-            this.logger.error(`<FarmaciaSaude> [databaseService] - Error inserting data: ${error.message}`);
+            this.logger.error(`<AFarmaciaOnline> [databaseService] - Error inserting data: ${error.message}`);
         }
 
         return success;

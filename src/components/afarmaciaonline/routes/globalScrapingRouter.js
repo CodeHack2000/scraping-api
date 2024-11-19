@@ -11,6 +11,7 @@ class GlobalScrapingRouter {
         this.controller = new GlobalScrapingController(Utils, Tools, DB);
 
         this._scrapeAllCategories();
+        this._getAllCategoriesUrls();
     }
 
     _scrapeAllCategories() {
@@ -18,6 +19,14 @@ class GlobalScrapingRouter {
         this.router.get(
             '/scrapeAllCategories',
             (req, res) => this.controller.scrapeAllCategories(req, res)
+        );
+    }
+
+    _getAllCategoriesUrls() {
+
+        this.router.get(
+            '/getAllCategoriesUrls',
+            (req, res) => this.controller.getAllCategoriesUrls(req, res)
         );
     }
 }
