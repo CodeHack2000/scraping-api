@@ -5,6 +5,7 @@ const UtilsComponent = require('@utils');
 const FarmaciaSantaMartaComponent = require('@farmaciasantamarta');
 const FarmaciaSaudeComponent = require('@farmaciasaude');
 const AFarmaciaOnlineComponent = require('@afarmaciaonline');
+const InventoryExtComponent = require('@inventoryExternal');
 const WorkerPoolComponent = require('@workerPool');
 const TaskQueueComponent = require('@taskQueue');
 const TestWebsiteComponent = require('@testwebsite');
@@ -44,6 +45,10 @@ const _db = {
     InventoryDB: inventoryDB
 };
 
+// External
+const inventoryExternal = new InventoryExtComponent(_utils, _db);
+
+// Internal
 const farmaciaSantaMarta = new FarmaciaSantaMartaComponent(_utils, _tools, _db);
 const farmaciaSaude = new FarmaciaSaudeComponent(_utils, _tools, _db);
 const aFarmaciaOnline = new AFarmaciaOnlineComponent(_utils, _tools, _db);
@@ -70,6 +75,8 @@ app.get('/', (req, res) => {
 app.use('/farmaciasantamarta', farmaciaSantaMarta.router);
 app.use('/farmaciasaude', farmaciaSaude.router);
 app.use('/afarmaciaonline', aFarmaciaOnline.router);
+app.use('/inventoryExt', inventoryExternal.router);
+
 app.use('/testwebsite', testWebsite.router);
 
 module.exports = app;

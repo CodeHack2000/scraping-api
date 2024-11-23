@@ -1,6 +1,7 @@
 const CategoriesService = require('./categories/categoriesService');
 const CategoriesDB = require('./categories/categoriesDB');
 const PricesService = require('./prices/pricesService');
+const PricesDB = require('./prices/pricesDB');
 const ProductsService = require('./products/productsService');
 const WebsitesService = require('./websites/websitesService');
 const WebsiteDB = require('./websites/websitesDB');
@@ -19,6 +20,7 @@ class InventoryDB {
         this.productsService = new ProductsService(Utils);
 
         this.pricesService = new PricesService(Utils);
+        this.pricesDB = PricesDB;
 
         this.testTableService = new TestTableService(Utils);
     }

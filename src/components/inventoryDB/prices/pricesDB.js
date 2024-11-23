@@ -1,4 +1,6 @@
-const { prices } = require('@models');
+const { literal, col } = require('sequelize');
+
+const { prices, websites, products, categories } = require('@models');
 
 class PricesDB {
 
@@ -71,6 +73,48 @@ class PricesDB {
                 batchSize: 1000
             }
         );
+    }
+
+    
+    /**
+     * Retrieves prices with product names similar to the given one.
+     * The similarity is calculated using the strict_word_similarity function.
+     * @param {string} [productName=''] - The product name to search for.
+     * @returns {Promise<Array<Object>>} The prices with similar product names.
+     */
+    static async getPricesWithSimilarity(productName = '') {
+
+        return await prices.findAll({
+            attributes: [
+                [col('website.name'), 'websiteName'],
+                [col('product->category.name'), 'category'],
+                [col('product.name'), 'productName'],
+                ['price', 'price'],
+                ['url', 'productUrl'],
+            ],
+            include: [
+                {
+                    model: products,
+                    as: 'product',
+                    attributes: [],
+                    include: [
+                        {
+                            model: categories,
+                            as: 'category',
+                            attributes: [],
+                        },
+                    ],
+                },
+                {
+                    model: websites,
+                    as: 'website',
+                    attributes: [],
+                },
+            ],
+            where: literal(`
+                strict_word_similarity( UPPER("product"."name"), '${productName}') >= 0.25
+            `),
+        });
     }
 }
 
