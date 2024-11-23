@@ -12,6 +12,7 @@ class GlobalScrapingRouter {
 
         this._scrapeAllCategories();
         this._getAllCategoriesUrls();
+        this._scrapeNotScrapedUrls();
     }
 
     _scrapeAllCategories() {
@@ -27,6 +28,14 @@ class GlobalScrapingRouter {
         this.router.get(
             '/getAllCategoriesUrls',
             (req, res) => this.controller.getAllCategoriesUrls(req, res)
+        );
+    }
+
+    _scrapeNotScrapedUrls() {
+
+        this.router.get(
+            '/scrapeNotScrapedUrls',
+            (req, res) => this.controller.scrapeNotScrapedUrls(req, res)
         );
     }
 }

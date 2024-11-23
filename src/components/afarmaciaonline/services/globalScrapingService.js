@@ -4,10 +4,11 @@ const config = require('../config/config');
 
 class GlobalScrapingService {
 
-    constructor(Logger, isWorker = false) {
+    constructor(Logger, isWorker = false, TorInstances = {}) {
 
         this.logger = Logger;
         this.isWorker = isWorker;
+        this.torInstances = TorInstances;
     }
 
     /**
@@ -138,6 +139,70 @@ class GlobalScrapingService {
         }
 
         return urls;
+    }
+
+    /**
+     * Scrapes a single page from the provided URL and extracts products from the HTML content.
+     * If the scraping is successful, it will return an object containing the scraped products and the URL of the next page.
+     * If the scraping is not successful, it will return an object containing the URL that was not scraped.
+     * @param {string} universalTorInstanceId - The universal Tor instance ID.
+     * @param {{url: string, categoryId: string}} payload - The payload containing the URL and category ID to be scraped.
+     * @param {Object} options - The options to be passed to the browser instance.
+     * @returns {Promise<{products: Array<Object>, nextPageUrl: string, notScrapedUrl: string}>} A promise that resolves with the scraped data.
+     */
+    async scrapeNotScrapedUrls(universalTorInstanceId, payload = {}, options = {}) {
+
+        const result = {
+            products: [],
+            nextPageUrl: null,
+            notScrapedUrl: ''
+        };
+
+        try {
+
+            const { url = '', categoryId = '' } = payload;
+
+            const response = await this.torInstances.doGetRequestBrowser(universalTorInstanceId, url, options);
+
+            if (response?.success) {
+
+                const jsonData = this.extractHtmlToJson(response.data);
+                
+                let filteredData = jsonData.filter((item) => item?.name) || [];
+                let tryCount = 0;
+                while (filteredData.length === 0 && tryCount < 3) {
+
+                    await new Promise(resolve => setTimeout(resolve, 1000));
+
+                    const _response = await this.torInstances.doGetRequestBrowser(universalTorInstanceId, url, options);
+
+                    const _jsonData = this.extractHtmlToJson(_response?.data);
+
+                    filteredData = _jsonData.filter((item) => item?.name) || [];
+
+                    tryCount++;
+                }
+
+                filteredData.forEach((item) => {
+
+                    item.categoryId = categoryId;
+                });
+
+                result.products.push(...filteredData);
+
+                result.nextPageUrl = jsonData.find((item) => item?.nextPageUrl)?.nextPageUrl || '';
+            }
+            else {
+
+                result.notScrapedUrl = url;
+            }
+        }
+        catch (error) {
+
+            this.logger.error('<AFarmaciaOnline> Error scraping URL: ' + error.message);
+        }
+
+        return result;
     }
 }
 

@@ -2,11 +2,12 @@ class GlobalMapper {
 
     /**
      * Maps a category from Farmacia Santa Marta to a category for the local database.
-     * @param {string} category - Category from Farmacia Santa Marta.
+     * @param {string} _category - Category from Farmacia Santa Marta.
      * @returns {string} The mapped category for the local database.
      */
-    static mapCategoryToDB(category = '') {
+    static mapCategoryToDB(_category = '') {
 
+        const category = _category.replace('/', '');
         let mappedCategory = '';
 
         if (category.includes('mama-e-bebe')) {

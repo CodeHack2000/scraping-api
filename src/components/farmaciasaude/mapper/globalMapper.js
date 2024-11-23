@@ -2,11 +2,12 @@ class GlobalMapper {
 
     /**
      * Maps a category from Farmacia Saude to a category for the local database.
-     * @param {string} category - Category from Farmacia Saude.
+     * @param {string} _category - Category from Farmacia Saude.
      * @returns {string} The mapped category for the local database.
      */
-    static mapCategoryToDB(category = '') {
+    static mapCategoryToDB(_category = '') {
 
+        const category = _category.replace('/pt/loja-online/', '');
         let mappedCategory = '';
 
         if (['bebe-crianca', 'mama'].includes(category)) {

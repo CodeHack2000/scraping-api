@@ -35,7 +35,7 @@ class DatabaseService {
 
                     return {
                         name: obj?.name,
-                        categoryId: categoryId,
+                        categoryId: categoryId || obj?.categoryId,
                         description: obj?.description,
                         msrm: obj?.msrm
                     };

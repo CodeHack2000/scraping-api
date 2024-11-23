@@ -117,7 +117,7 @@ class GlobalScrapingController {
 
             if (notScrapedUrls.length > 0) {
 
-                const filename = `not-scraped-urls_FarmaciaSaude__${Moment().toDate().toISOString()}.json`;
+                const filename = `not-scraped-urls_FarmaciaSaude_${Moment().toDate().toISOString()}.txt`;
 
                 const filePath = Path.join(__dirname, '../../../data', filename);
 
