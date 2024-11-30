@@ -10,11 +10,13 @@ const WorkerPoolComponent = require('@workerPool');
 const TaskQueueComponent = require('@taskQueue');
 const TestWebsiteComponent = require('@testwebsite');
 const InventoryDBComponent = require('@inventoryDB');
+const AuthComponent = require('@auth');
 
 // Load aliases
 require('module-alias/register');
 
 const ErrorHandler = require('@shared/middlewares/errorHandlerMiddleware');
+const AuthMiddleware = require('./components/auth/middlewares/authMiddleware');
 
 const app = Express();
 
@@ -45,14 +47,22 @@ const _db = {
     InventoryDB: inventoryDB
 };
 
+// Auth
+const auth = new AuthComponent(_utils);
+
+// Middleware pack
+const _middlewares = {
+    AuthMiddleware: auth.middlewares
+};
+
 // External
-const inventoryExternal = new InventoryExtComponent({ ..._utils, CommonMapper: utils.commonMapper }, _db);
+const inventoryExternal = new InventoryExtComponent({ ..._utils, CommonMapper: utils.commonMapper }, _db, _middlewares);
 
 // Internal
-const farmaciaSantaMarta = new FarmaciaSantaMartaComponent(_utils, _tools, _db);
-const farmaciaSaude = new FarmaciaSaudeComponent(_utils, _tools, _db);
-const aFarmaciaOnline = new AFarmaciaOnlineComponent(_utils, _tools, _db);
-const testWebsite = new TestWebsiteComponent(_utils, _tools, _db);
+const farmaciaSantaMarta = new FarmaciaSantaMartaComponent(_utils, _tools, _db, _middlewares);
+const farmaciaSaude = new FarmaciaSaudeComponent(_utils, _tools, _db, _middlewares);
+const aFarmaciaOnline = new AFarmaciaOnlineComponent(_utils, _tools, _db, _middlewares);
+const testWebsite = new TestWebsiteComponent(_utils, _tools, _db, _middlewares);
 
 // Config
 app.disable('x-powered-by');

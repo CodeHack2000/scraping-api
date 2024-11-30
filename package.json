@@ -22,7 +22,8 @@
     "@taskQueue": "src/components/taskQueue",
     "@testwebsite": "src/components/testWebsite",
     "@inventoryDB": "src/components/inventoryDB",
-    "@inventoryExternal": "src/components/inventoryExternal"
+    "@inventoryExternal": "src/components/inventoryExternal",
+    "@auth": "src/components/auth"
   },
   "author": "Vladyslav Safronov",
   "license": "ISC",

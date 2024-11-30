@@ -2,9 +2,9 @@ const GlobalScrapingRouter = require('./routes/globalScrapingRouter');
 
 class TestWebsite {
 
-    constructor(Utils, Tools, DB) {
+    constructor(Utils, Tools, DB, Middlewares) {
 
-        this.router = (new GlobalScrapingRouter(Utils, Tools, DB)).router;
+        this.router = (new GlobalScrapingRouter(Utils, Tools, DB, Middlewares)).router;
     }
 }
 

@@ -1,16 +1,17 @@
 const Express = require('express');
 
 const InventoryController = require('../controller/inventoryController');
-const AuthMiddleware = require('../middleware/authMiddleware');
 
 class InventoryRouter {
 
-    constructor(Utils, DB) {
+    constructor(Utils, DB, Middlewares) {
+
+        const { AuthMiddleware } = Middlewares;
 
         this.router = Express.Router();
 
         this.controller = new InventoryController(Utils, DB);
-        this.authMiddleware = new AuthMiddleware(Utils);
+        this.authMiddleware = AuthMiddleware;
 
         this._getAllCategories();
         this._verifyProducts();
@@ -20,7 +21,7 @@ class InventoryRouter {
 
         this.router.get(
             '/getAllCategories',
-            (req, res, next) => this.authMiddleware.isInternalRequest(req, res, next),
+            (req, res, next) => this.authMiddleware.isInternalApiRequest(req, res, next),
             (req, res) => this.controller.getAllCategories(req, res)
         );
     }
@@ -29,7 +30,7 @@ class InventoryRouter {
 
         this.router.post(
             '/verifyProducts',
-            (req, res, next) => this.authMiddleware.isInternalRequest(req, res, next),
+            (req, res, next) => this.authMiddleware.isInternalApiRequest(req, res, next),
             (req, res) => this.controller.verifyProducts(req, res)
         );
     }
