@@ -1,4 +1,5 @@
 const Express = require('express');
+const Cors = require('cors');
 
 const TorInstancesComponent = require('@tor');
 const UtilsComponent = require('@utils');
@@ -11,6 +12,8 @@ const TaskQueueComponent = require('@taskQueue');
 const TestWebsiteComponent = require('@testwebsite');
 const InventoryDBComponent = require('@inventoryDB');
 const AuthComponent = require('@auth');
+
+const serverConfig = require('./config/serverConfig');
 
 // Load aliases
 require('module-alias/register');
@@ -64,11 +67,17 @@ const farmaciaSaude = new FarmaciaSaudeComponent(_utils, _tools, _db, _middlewar
 const aFarmaciaOnline = new AFarmaciaOnlineComponent(_utils, _tools, _db, _middlewares);
 const testWebsite = new TestWebsiteComponent(_utils, _tools, _db, _middlewares);
 
+const corsOptions = {
+    origin: `http://${serverConfig.host}:${serverConfig.port}`,
+    methods: ['GET', 'POST'],
+    allowHeaders: ['Content-Type', 'Authorization']
+};
+
 // Config
 app.disable('x-powered-by');
 
 // Middleware
-//app.use(Cors()); // Recomendado usar apenas nas rotas que quero tornar públicas
+app.use(Cors(corsOptions));
 app.use(Express.json());
 app.use(Express.urlencoded({ extended: false }));
 
