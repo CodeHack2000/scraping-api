@@ -46,7 +46,7 @@ const _db = {
 };
 
 // External
-const inventoryExternal = new InventoryExtComponent(_utils, _db);
+const inventoryExternal = new InventoryExtComponent({ ..._utils, CommonMapper: utils.commonMapper }, _db);
 
 // Internal
 const farmaciaSantaMarta = new FarmaciaSantaMartaComponent(_utils, _tools, _db);

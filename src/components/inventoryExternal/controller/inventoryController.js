@@ -2,10 +2,11 @@ class InventoryController {
 
     constructor(Utils, DB) {
 
-        const { Logger } = Utils;
+        const { Logger, CommonMapper } = Utils;
         const { InventoryDB } = DB;
 
         this.logger = Logger;
+        this.commonMapper = CommonMapper;
         this.inventoryDB = InventoryDB;
     }
 
@@ -26,19 +27,7 @@ class InventoryController {
 
             this.logger.info('<Inventory> Getting all categories...');
 
-
-            const categories = await this.inventoryDB.categoriesDB.getAllCategories();
-            
-            const mappedCategories = categories.map((category) => {
-
-                return  {
-                    id: category.id,
-                    name: category.name,
-                    description: category.description
-                };
-            });
-
-            result.push(...mappedCategories);
+            result.categories.push(...await this.inventoryDB.categoriesDB.getAllCategories());
 
             result.status = 200;
 
@@ -76,7 +65,10 @@ class InventoryController {
 
             for (const _productName of productsArray) {
 
-                const productName = _productName?.toUpperCase()?.trim();
+                const productName = this.commonMapper.toString(_productName)
+                    ?.replace(/'"/g, '')
+                    ?.toUpperCase()
+                    ?.trim();
 
                 this.logger.info(`<Inventory> Verifying product: ${productName}`);
 

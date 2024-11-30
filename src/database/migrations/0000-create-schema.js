@@ -1,13 +1,13 @@
 'use strict';
 
-const DbConfig = require('../../config/dbConfig');
+const dbConfig = require('../../config/dbConfig');
 
 module.exports = {
     up: async (queryInterface) => {
-        await queryInterface.createSchema(DbConfig.schema);
+        await queryInterface.createSchema(dbConfig.schema);
     },
 
     down: async (queryInterface) => {
-        await queryInterface.dropSchema(DbConfig.schema);
+        await queryInterface.dropSchema(dbConfig.schema);
     }
 };

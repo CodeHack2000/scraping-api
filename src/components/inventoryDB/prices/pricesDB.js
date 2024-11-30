@@ -91,6 +91,7 @@ class PricesDB {
                 [col('product.name'), 'productName'],
                 ['price', 'price'],
                 ['url', 'productUrl'],
+                ['updatedAt', 'lastCheck']
             ],
             include: [
                 {
@@ -114,6 +115,7 @@ class PricesDB {
             where: literal(`
                 strict_word_similarity( UPPER("product"."name"), '${productName}') >= 0.25
             `),
+            order: [['price', 'ASC']]
         });
     }
 }
