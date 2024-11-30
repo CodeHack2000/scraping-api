@@ -1,17 +1,20 @@
 const Express = require('express');
 
 const InventoryController = require('../controller/inventoryController');
+const InventoryRouterSchemas = require('../schemas/inventoryExternalRouterSchemas');
 
 class InventoryRouter {
 
     constructor(Utils, DB, Middlewares) {
 
-        const { AuthMiddleware } = Middlewares;
+        const { AuthMiddleware, SchemaValidationMiddleware } = Middlewares;
 
         this.router = Express.Router();
-
-        this.controller = new InventoryController(Utils, DB);
+        this.schemaValidationMiddleware = SchemaValidationMiddleware;
         this.authMiddleware = AuthMiddleware;
+
+        this.schemas = InventoryRouterSchemas;
+        this.controller = new InventoryController(Utils, DB);
 
         this._getAllCategories();
         this._verifyProducts();
@@ -30,7 +33,10 @@ class InventoryRouter {
 
         this.router.post(
             '/verifyProducts',
-            (req, res, next) => this.authMiddleware.isInternalApiRequest(req, res, next),
+            [
+                (req, res, next) => this.authMiddleware.isInternalApiRequest(req, res, next),
+                (req, res, next) => this.schemaValidationMiddleware(this.schemas.verifyProducts, 'body')(req, res, next)
+            ],
             (req, res) => this.controller.verifyProducts(req, res)
         );
     }

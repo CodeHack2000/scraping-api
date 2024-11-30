@@ -15,8 +15,7 @@ const AuthComponent = require('@auth');
 // Load aliases
 require('module-alias/register');
 
-const ErrorHandler = require('@shared/middlewares/errorHandlerMiddleware');
-const AuthMiddleware = require('./components/auth/middlewares/authMiddleware');
+const SharedMiddlewares = require('@shared/middlewares');
 
 const app = Express();
 
@@ -52,7 +51,8 @@ const auth = new AuthComponent(_utils);
 
 // Middleware pack
 const _middlewares = {
-    AuthMiddleware: auth.middlewares
+    AuthMiddleware: auth.middlewares,
+    SchemaValidationMiddleware: SharedMiddlewares.schemaValidationMiddleware
 };
 
 // External
@@ -74,7 +74,7 @@ app.use(Express.urlencoded({ extended: false }));
 
 // Middlewares
 // Error handler
-app.use(ErrorHandler);
+app.use(SharedMiddlewares.errorHandlerMiddleware);
 
 // Routes
 app.get('/', (req, res) => {
