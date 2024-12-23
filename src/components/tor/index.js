@@ -1,7 +1,6 @@
 const Zlib = require('zlib');
 
 const torConfig = require('./config/config');
-const AxiosAgentService = require('./services/axiosAgentService');
 const TorControlService = require('./services/torControlService');
 const PuppeteerService = require('./services/puppeteerService');
 
